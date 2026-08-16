@@ -1,0 +1,1 @@
+# SpotShift ProGuard rules

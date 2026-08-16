@@ -1,0 +1,20 @@
+# Gradle
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+*.apk
+*.aab
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# macOS
+.DS_Store
+
+# Keystore / 시크릿
+*.jks
+*.keystore
+.env

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SpotShift</string>
+    <string name="tile_label">SpotShift</string>
+    <string name="tab_status">상태</string>
+    <string name="tab_history">기록</string>
+    <string name="tab_settings">설정</string>
+</resources>

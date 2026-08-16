@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SpotShift 아이콘: Wi-Fi 신호 파장 + 순환 화살표 (IP 순환 의미) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Wi-Fi 파장 (하늘색 #38BDF8): 세 개 곡선 -->
+    <path
+        android:pathData="M36,52 Q54,38 72,52"
+        android:strokeColor="#38BDF8"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+    <path
+        android:pathData="M42,59 Q54,49 66,59"
+        android:strokeColor="#38BDF8"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+    <path
+        android:pathData="M48,66 Q54,60 60,66"
+        android:strokeColor="#38BDF8"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+    <!-- 도트 (파장의 중심점) -->
+    <path
+        android:pathData="M54,73 m-3.5,0 a3.5,3.5 0 1,1 7,0 a3.5,3.5 0 1,1 -7,0"
+        android:fillColor="#38BDF8" />
+
+    <!-- 순환 화살표 (초록 #22C55E): 호 + 화살촉 -->
+    <path
+        android:pathData="M54,30 A24,24 0 1,1 76.97,38.5"
+        android:strokeColor="#22C55E"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+    <!-- 화살촉 -->
+    <path
+        android:pathData="M70,34 L78,36.5 L73.5,43.5 Z"
+        android:fillColor="#22C55E" />
+</vector>

@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="SpotShift — 핫스팟 IP 자동 변경기. 무루트(Shizuku)로 모바일 네트워크 IP를 주기적으로 바꿔주는 안드로이드 앱. APK 직접 다운로드 + 상세 설치 방법.">
+<meta name="theme-color" content="#0F172A">
+<title>SpotShift — 핫스팟 IP 자동 변경기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ===== Tokens ===== */
+:root {
+  --color-primary: #1E3A5F;
+  --color-on-primary: #FFFFFF;
+  --color-secondary: #334155;
+  --color-on-secondary: #FFFFFF;
+  --color-accent: #22C55E;
+  --color-on-accent: #0F172A;
+  --color-background: #0F172A;
+  --color-foreground: #FFFFFF;
+  --color-card: #192134;
+  --color-card-foreground: #FFFFFF;
+  --color-muted: #10192E;
+  --color-muted-foreground: #94A3B8;
+  --color-border: rgba(255,255,255,0.08);
+  --color-destructive: #DC2626;
+  --font-display: 'Poppins', sans-serif;
+  --font-body: 'Open Sans', sans-serif;
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-5: 24px; --space-6: 32px; --space-7: 48px; --space-8: 64px; --space-9: 96px;
+  --radius-sm: 8px; --radius-md: 14px; --radius-lg: 20px;
+  --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --duration: 220ms;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { overflow-x: clip; }
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, h4 { font-family: var(--font-display); font-style: normal; line-height: 1.25; letter-spacing: -0.01em; overflow-wrap: anywhere; min-width: 0; }
+a { color: var(--color-accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+img, svg { display: block; max-width: 100%; }
+.container { max-width: 1060px; margin: 0 auto; padding: 0 var(--space-5); }
+:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 2px; border-radius: var(--radius-sm); }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* ===== Button ===== */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  font-family: var(--font-display); font-weight: 600; font-size: 17px;
+  padding: 16px 32px; border-radius: var(--radius-md); border: none;
+  cursor: pointer; transition: transform var(--duration) var(--ease), box-shadow var(--duration) var(--ease), background var(--duration) var(--ease);
+  text-decoration: none !important; white-space: nowrap;
+}
+.btn:hover { transform: translateY(-2px); }
+.btn:active { transform: translateY(0); }
+.btn-primary { background: var(--color-accent); color: var(--color-on-accent); box-shadow: 0 8px 24px rgba(34,197,94,0.25); }
+.btn-primary:hover { background: #2ED06B; box-shadow: 0 12px 32px rgba(34,197,94,0.35); }
+.btn-ghost { background: var(--color-card); color: var(--color-foreground); border: 1px solid var(--color-border); }
+.btn-ghost:hover { background: #1E2A3E; }
+.btn-lg { padding: 18px 40px; font-size: 18px; }
+
+/* ===== Nav ===== */
+.nav {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(15,23,42,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--color-border);
+}
+.nav-inner { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+.brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 600; font-size: 18px; color: var(--color-foreground); text-decoration: none; }
+.brand:hover { text-decoration: none; }
+.brand-mark { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--color-primary), #2E5A8F); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; color: #fff; }
+.nav-links { display: flex; align-items: center; gap: var(--space-5); list-style: none; }
+.nav-links a { color: var(--color-muted-foreground); font-size: 15px; font-weight: 500; }
+.nav-links a:hover { color: var(--color-foreground); text-decoration: none; }
+.nav-cta { padding: 9px 20px; font-size: 14px; }
+@media (max-width: 720px) {
+  .nav-links li:not(:last-child) { display: none; }
+}
+
+/* ===== Hero ===== */
+.hero { position: relative; padding: var(--space-9) 0 var(--space-8); overflow: clip; }
+.hero::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(600px 400px at 80% 10%, rgba(30,58,95,0.55), transparent 70%),
+    radial-gradient(500px 380px at 10% 90%, rgba(34,197,94,0.12), transparent 70%);
+}
+.hero-grid { position: relative; display: grid; grid-template-columns: 1.1fr 0.9fr; gap: var(--space-8); align-items: center; }
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--color-muted); border: 1px solid var(--color-border);
+  color: var(--color-muted-foreground); font-size: 13px; font-weight: 600;
+  padding: 6px 14px; border-radius: 999px; margin-bottom: var(--space-4);
+}
+.hero-badge .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-accent); box-shadow: 0 0 10px var(--color-accent); }
+.hero h1 { font-size: clamp(34px, 5.2vw, 54px); font-weight: 700; margin-bottom: var(--space-4); }
+.hero h1 .hl { color: var(--color-accent); }
+.hero p.lead { font-size: clamp(16px, 2vw, 19px); color: var(--color-muted-foreground); max-width: 54ch; margin-bottom: var(--space-6); }
+.hero-cta { display: flex; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5); }
+.hero-meta { display: flex; gap: var(--space-5); flex-wrap: wrap; color: var(--color-muted-foreground); font-size: 14px; }
+.hero-meta b { color: var(--color-foreground); font-weight: 600; }
+
+/* 3D hero visual */
+.hero-visual { perspective: 1100px; }
+.phone {
+  position: relative; margin: 0 auto; width: min(300px, 80%);
+  transform: rotateY(-14deg) rotateX(6deg);
+  transform-style: preserve-3d;
+  background: var(--color-card); border: 1px solid var(--color-border);
+  border-radius: 28px; padding: 18px 16px 24px; box-shadow: 0 40px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04) inset;
+  transition: transform var(--duration) var(--ease);
+}
+.phone:hover { transform: rotateY(-8deg) rotateX(3deg) translateY(-6px); }
+.phone-screen { background: #0B1220; border: 1px solid var(--color-border); border-radius: 18px; padding: 16px; }
+.phone-status { display: flex; justify-content: space-between; font-size: 11px; color: var(--color-muted-foreground); margin-bottom: 12px; }
+.phone-ip { display: flex; align-items: center; justify-content: space-between; background: var(--color-primary); border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 10px; }
+.phone-ip span { font-family: var(--font-display); font-weight: 600; font-size: 13px; color: #fff; }
+.phone-ip .chip { font-size: 10px; font-weight: 700; background: rgba(255,255,255,0.15); padding: 2px 8px; border-radius: 999px; }
+.phone-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--color-border); font-size: 12px; color: var(--color-muted-foreground); }
+.phone-row:last-of-type { border-bottom: none; }
+.phone-row b { color: var(--color-foreground); font-weight: 600; }
+.phone-gauge { margin-top: 12px; }
+.phone-gauge .bar { height: 8px; border-radius: 999px; background: var(--color-muted); overflow: hidden; }
+.phone-gauge .bar i { display: block; height: 100%; width: 64%; border-radius: 999px; background: linear-gradient(90deg, var(--color-primary), var(--color-accent)); }
+.phone-gauge p { font-size: 11px; color: var(--color-muted-foreground); margin-top: 6px; }
+.wifi-ring {
+  position: absolute; top: 50%; left: 50%; width: 420px; height: 420px;
+  transform: translate(-50%, -50%); pointer-events: none;
+  border: 1px solid rgba(34,197,94,0.18); border-radius: 50%;
+  animation: ring 5s var(--ease) infinite;
+}
+.wifi-ring::before { content: ""; position: absolute; inset: -34px; border: 1px solid rgba(34,197,94,0.10); border-radius: 50%; }
+.wifi-ring::after { content: ""; position: absolute; inset: -68px; border: 1px solid rgba(34,197,94,0.06); border-radius: 50%; }
+@keyframes ring { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .wifi-ring { animation: none; } }
+
+/* ===== Section head ===== */
+.section { padding: var(--space-8) 0; }
+.section-head { max-width: 620px; margin-bottom: var(--space-7); }
+.section-head .kicker { color: var(--color-accent); font-family: var(--font-display); font-weight: 600; font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: var(--space-3); }
+.section-head h2 { font-size: clamp(26px, 3.6vw, 38px); font-weight: 600; margin-bottom: var(--space-3); }
+.section-head p { color: var(--color-muted-foreground); }
+
+/* ===== Features ===== */
+.features { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-5); }
+.feature {
+  background: var(--color-card); border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg); padding: var(--space-6) var(--space-5);
+  transition: transform var(--duration) var(--ease), border-color var(--duration) var(--ease);
+}
+.feature:hover { transform: translateY(-4px); border-color: rgba(34,197,94,0.35); }
+.feature .ico { width: 46px; height: 46px; border-radius: 12px; background: rgba(34,197,94,0.12); display: flex; align-items: center; justify-content: center; margin-bottom: var(--space-4); }
+.feature .ico svg { width: 24px; height: 24px; stroke: var(--color-accent); }
+.feature h3 { font-size: 18px; font-weight: 600; margin-bottom: var(--space-2); }
+.feature p { color: var(--color-muted-foreground); font-size: 15px; }
+
+/* ===== Install steps ===== */
+.install { background: var(--color-muted); border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); }
+.steps { display: grid; gap: var(--space-5); }
+.step {
+  display: grid; grid-template-columns: 72px 1fr; gap: var(--space-5);
+  background: var(--color-card); border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg); padding: var(--space-5);
+}
+.step-num {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary), #2E5A8F);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display); font-weight: 700; font-size: 22px; color: #fff;
+}
+.step h3 { font-size: 18px; font-weight: 600; margin-bottom: var(--space-2); }
+.step h3 .tag { font-size: 12px; font-weight: 600; color: var(--color-on-accent); background: var(--color-accent); padding: 2px 10px; border-radius: 999px; margin-left: 8px; vertical-align: 2px; }
+.step ol, .step ul { padding-left: var(--space-5); color: var(--color-muted-foreground); font-size: 15px; display: grid; gap: var(--space-2); }
+.step li b { color: var(--color-foreground); font-weight: 600; }
+.step .note { margin-top: var(--space-3); font-size: 14px; color: var(--color-muted-foreground); background: var(--color-muted); border: 1px dashed var(--color-border); border-radius: var(--radius-sm); padding: var(--space-3) var(--space-4); }
+.step .note b { color: var(--color-accent); }
+
+/* ===== FAQ ===== */
+.faq { display: grid; gap: var(--space-4); max-width: 760px; }
+.faq details {
+  background: var(--color-card); border: 1px solid var(--color-border);
+  border-radius: var(--radius-md); padding: var(--space-4) var(--space-5);
+  transition: border-color var(--duration) var(--ease);
+}
+.faq details[open] { border-color: rgba(34,197,94,0.4); }
+.faq summary { cursor: pointer; font-family: var(--font-display); font-weight: 600; font-size: 16px; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; font-family: var(--font-body); font-size: 22px; color: var(--color-accent); transition: transform var(--duration) var(--ease); }
+.faq details[open] summary::after { transform: rotate(45deg); }
+.faq .a { margin-top: var(--space-3); color: var(--color-muted-foreground); font-size: 15px; }
+.faq .a b { color: var(--color-foreground); }
+
+/* ===== CTA / Footer ===== */
+.cta-band { text-align: center; padding: var(--space-9) 0; position: relative; overflow: clip; }
+.cta-band::before { content: ""; position: absolute; inset: 0; background: radial-gradient(700px 300px at 50% 100%, rgba(34,197,94,0.10), transparent 70%); }
+.cta-band h2 { font-size: clamp(26px, 3.6vw, 40px); margin-bottom: var(--space-3); }
+.cta-band p { color: var(--color-muted-foreground); margin-bottom: var(--space-6); }
+.footer { border-top: 1px solid var(--color-border); padding: var(--space-6) 0 var(--space-7); color: var(--color-muted-foreground); font-size: 14px; }
+.footer-inner { display: flex; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; }
+.footer a { color: var(--color-muted-foreground); }
+.footer a:hover { color: var(--color-accent); }
+
+/* ===== Responsive ===== */
+@media (max-width: 900px) {
+  .hero-grid { grid-template-columns: 1fr; gap: var(--space-7); }
+  .hero-visual { order: -1; }
+  .phone { transform: none; }
+  .phone:hover { transform: translateY(-4px); }
+  .features { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .container { padding: 0 var(--space-4); }
+  .hero { padding: var(--space-7) 0; }
+  .step { grid-template-columns: 1fr; gap: var(--space-3); }
+  .hero-cta .btn { width: 100%; }
+  .footer-inner { flex-direction: column; gap: var(--space-3); }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav" aria-label="주요 메뉴">
+  <div class="container nav-inner">
+    <a class="brand" href="#top" aria-label="SpotShift 홈">
+      <span class="brand-mark" aria-hidden="true">S</span>
+      <span>SpotShift</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#why">왜 필요한가</a></li>
+      <li><a href="#install">설치 방법</a></li>
+      <li><a href="#faq">FAQ</a></li>
+      <li><a href="#contact">문의</a></li>
+      <li><a class="btn btn-primary nav-cta" href="https://github.com/BoraSarang/SpotShift/releases/latest" target="_blank" rel="noopener">APK 다운로드</a></li>
+    </ul>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="container hero-grid">
+    <div>
+      <span class="hero-badge"><span class="dot" aria-hidden="true"></span>무루트 · Shizuku 기반 · Android 8.0+</span>
+      <h1>핫스팟 IP를 <span class="hl">자동으로</span><br>바꿔주는 안드로이드 앱</h1>
+      <p class="lead">정해진 주기마다 모바일 네트워크 IP를 자동 변경하고, 핫스팟을 원래 상태로 되돌립니다. 루트 권한 없이, 서버 없이 — 순수하게 기기 안에서만 동작합니다.</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary btn-lg" href="https://github.com/BoraSarang/SpotShift/releases/latest" target="_blank" rel="noopener">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          APK 다운로드
+        </a>
+        <a class="btn btn-ghost btn-lg" href="#install">설치 방법 보기</a>
+      </div>
+      <div class="hero-meta">
+        <span>버전 <b>v0.3.1</b></span>
+        <span>용량 <b>11.4 MB</b></span>
+        <span>서명 <b>릴리즈 키</b></span>
+        <span>최초 배포 <b>2026-08-16</b></span>
+      </div>
+    </div>
+
+    <div class="hero-visual" aria-hidden="true">
+      <div class="wifi-ring"></div>
+      <div class="phone">
+        <div class="phone-screen">
+          <div class="phone-status"><span>SpotShift</span><span>14:42 · 예정</span></div>
+          <div class="phone-ip"><span>39.7.50.166</span><span class="chip">변경됨</span></div>
+          <div class="phone-row"><span>현재 상태</span><b>핫스팟 ON</b></div>
+          <div class="phone-row"><span>변경 주기</span><b>2시간</b></div>
+          <div class="phone-row"><span>다음 변경</span><b>14:42</b></div>
+          <div class="phone-gauge">
+            <div class="bar"><i></i></div>
+            <p>모바일 데이터 재연결 중…</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="section" id="why">
+  <div class="container">
+    <div class="section-head">
+      <span class="kicker">Why SpotShift</span>
+      <h2>왜 필요한가요?</h2>
+      <p>장시간 핫스팟을 켜두면 IP가 고정되어 접속 제한·차단이 생길 수 있습니다. SpotShift가 IP를 주기적으로 바꿔 이를 방지합니다.</p>
+    </div>
+    <div class="features">
+      <div class="feature">
+        <div class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg></div>
+        <h3>주기 자동 변경</h3>
+        <p>10분~24시간 사이 원하는 주기를 설정하면, 핫스팟이 켜진 동안 IP를 자동으로 바꿉니다.</p>
+      </div>
+      <div class="feature">
+        <div class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg></div>
+        <h3>네트워크 자동 복원</h3>
+        <p>IP 변경 후 모바일 데이터와 핫스팟을 원래 상태로 되돌립니다. 에어플레인 폴백까지 지원해 어느 기기에서도 안정적으로 동작합니다.</p>
+      </div>
+      <div class="feature">
+        <div class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <h3>무루트 · 서버 없음</h3>
+        <p>루트 권한이 필요 없습니다. Shizuku만 있으면 동작하며, 모든 처리가 기기 안에서만 이뤄져 데이터가 외부로 나가지 않습니다.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section install" id="install">
+  <div class="container">
+    <div class="section-head">
+      <span class="kicker">Install Guide</span>
+      <h2>설치 방법 — 4단계</h2>
+      <p>Play 스토어에 올라가지 않은 독립 앱이라 다운로드~설치 과정이 조금 있습니다. 하나씩 따라 하시면 5분 안에 끝납니다.</p>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num" aria-hidden="true">1</div>
+        <div>
+          <h3>Shizuku 앱 설치 <span class="tag">필수</span></h3>
+          <p>SpotShift는 권한이 없는 앱으로는 통신을 바꿀 수 없어, <b>무루트 권한 시스템인 Shizuku</b>를 함께 사용합니다. 아래 중 편한 방법으로 Shizuku를 설치하세요.</p>
+          <ul>
+            <li><b>Play 스토어</b>: <a href="https://play.google.com/store/apps/details?id=moe.shizuku.privileged.api" target="_blank" rel="noopener">Shizuku (moe.shizuku.privileged.api)</a> 검색 후 설치</li>
+            <li><b>GitHub</b> (스토어 없이): <a href="https://github.com/RikkaApps/Shizuku/releases/latest" target="_blank" rel="noopener">RikkaApps/Shizuku 릴리즈</a>에서 APK 다운로드</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num" aria-hidden="true">2</div>
+        <div>
+          <h3>Shizuku 활성화 <span class="tag">무선 디버깅 방식</span></h3>
+          <p>갤럭시(One UI) 기준이며, 다른 기기도 경로만 다를 뿐 순서는 같습니다.</p>
+          <ol>
+            <li>개발자 옵션 켜기 — <b>설정 → 휴대전화 정보 → 소프트웨어 정보 → 빌드 번호를 7번 탭</b> ("개발자 모드가 켜졌습니다")</li>
+            <li><b>설정 → 개발자 옵션 → USB 디버깅 ON</b></li>
+            <li><b>설정 → 개발자 옵션 → 무선 디버깅 ON</b> → (팝업이 뜨면 허용)</li>
+            <li>Shizuku 앱 실행 → <b>"무선 디버깅으로 시작"</b> 탭 → 다음 화면의 안내대로 페어링</li>
+            <li>페어링 코드 입력 — <b>설정 → 개발자 옵션 → 무선 디버깅 → 페어링 기기 쌍 연결</b>에서 코드 확인 후 입력 → <b>"항상 허용"</b> 체크</li>
+            <li>Shizuku 화면 상단이 <b>"Running"</b>이 되면 완료 (부팅 후에는 Shizuku 앱을 다시 열어 재시작해 주세요)</li>
+          </ol>
+          <div class="note">💡 <b>참고</b>: ADB 케이블로 PC가 있다면 더 간단합니다 — PC에서 <code>adb pair</code> 없이 <code>adb install</code> 후 <code>adb shell sh /sdcard/Android/data/moe.shizuku.privileged.api/start.sh</code> 방식도 사용 가능합니다.</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num" aria-hidden="true">3</div>
+        <div>
+          <h3>SpotShift APK 다운로드 + 허용</h3>
+          <p>이 페이지의 <b>APK 다운로드</b> 버튼을 눌러 <code>app-release.apk</code>를 받으세요. Play 스토어가 아니므로 <b>"알 수 없는 소스" 허용</b>이 필요합니다.</p>
+          <ol>
+            <li><a href="https://github.com/BoraSarang/SpotShift/releases/latest" target="_blank" rel="noopener">다운로드 페이지</a>에서 <code>app-release.apk</code> 다운로드 (한국·해외 어디서나 접속 가능)</li>
+            <li>다운로드 완료 알림에서 <b>APK 탭</b> → "이 앱을 설치할 수 없습니다" 안내가 뜨면 <b>"설정"</b> 버튼 탭</li>
+            <li>갤럭시 경로: <b>설정 → 생체 인식 및 보안 → 기타 보안 설정 → 알 수 없는 앱 설치</b> → 사용 중인 브라우저(Chrome 등) 선택 → <b>"이 앱 허용" ON</b></li>
+            <li>다시 APK 탭 → <b>설치</b> → 완료되면 <b>열기</b></li>
+          </ol>
+          <div class="note">🔒 <b>안전 안내</b>: "알 수 없는 소스 허용"은 <b>선택한 브라우저 하나에만</b> 적용됩니다. 허용 후에도 <code>app-release.apk</code> 외 출처 불명 APK는 설치하지 마세요. 정식 서명(릴리즈 키)으로 빌드된 파일입니다.</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num" aria-hidden="true">4</div>
+        <div>
+          <h3>SpotShift 시작 + 권한 연결</h3>
+          <ol>
+            <li>앱 실행 → 하단 <b>설정 탭</b> → <b>"권한 요청"</b> 탭 → Shizuku 권한 다이얼로그에서 <b>"항상 허용"</b></li>
+            <li>설정 탭이 <b>"연결됨"</b>으로 바뀌면 성공</li>
+            <li>홈에서 <b>변경 주기 설정</b> (10분~24시간) → <b>셀룰러 전용</b>·<b>건너뛰기</b> 등 원하는 옵션 ON</li>
+            <li>기기의 <b>핫스팟을 켜고</b> 홈의 <b>자동 변경 시작</b> 토글 ON</li>
+            <li>설정한 시각마다 IP가 자동 변경됩니다 — 상태 알림과 홈 화면에서 <b>예상 변경 시각</b>을 확인하세요</li>
+          </ol>
+          <div class="note">🌏 <b>해외(일본 등) 사용</b>: 이 페이지는 한국·일본 어디서나 접속·다운로드됩니다. 로밍 중이거나 일본 신주쿠 같은 Wi-Fi 밀집 지역에서도 동일한 방법으로 설치하면 그대로 동작합니다. IP 변경은 로컬에서 이뤄지므로 통신사/로밍 상태와 무관합니다.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="faq">
+  <div class="container">
+    <div class="section-head">
+      <span class="kicker">FAQ</span>
+      <h2>자주 묻는 질문</h2>
+    </div>
+    <div class="faq">
+      <details>
+        <summary>핫스팟을 껐다 켜도 되는데, 왜 이 앱이 필요한가요?</summary>
+        <div class="a">직접 껐다 켜면 IP가 <b>바뀌지 않을 때가 많고</b>(재할당이 항상 이뤄지지 않음), 잠깐이라도 연결이 끊깁니다. SpotShift는 모바일 데이터를 껐다 켜 IP 재할당을 <b>강제</b>하고, 완료 후 핫스팟을 자동 복원해 <b>연결 중단을 최소화</b>합니다.</div>
+      </details>
+      <details>
+        <summary>루트 없이 어떻게 통신을 바꾸나요?</summary>
+        <div class="a">Shizuku가 셸 권한을 빌려주고, SpotShift가 이를 통해 <b>시스템 명령(<code>svc data disable/enable</code>)</b>을 실행하는 방식입니다. 실패 시 에어플레인 모드 전환으로 폴백합니다.</div>
+      </details>
+      <details>
+        <summary>IP 변경 중 핫스팟 연결이 끊기나요?</summary>
+        <div class="a">네, 변경 순간 수 초간 끊기며 이후 <b>자동으로 원래 상태로 복원</b>됩니다. 데이터 재연결을 먼저 시도해 끊김 시간을 최소화합니다.</div>
+      </details>
+      <details>
+        <summary>배터리나 데이터 사용량에 영향이 있나요?</summary>
+        <div class="a">IP 변경은 수 초간의 데이터 전환일 뿐이라 <b>데이터 추가 소모는 거의 없습니다</b>. 백그라운드 폴링 없이 설정된 시각에만 동작해 배터리 영향도 미미합니다.</div>
+      </details>
+      <details>
+        <summary>앱 업데이트는 어떻게 받나요?</summary>
+        <div class="a">같은 <a href="https://github.com/BoraSarang/SpotShift/releases/latest" target="_blank" rel="noopener">GitHub 릴리즈 페이지</a>에서 새 버전 APK를 받아 설치하면 됩니다. <b>같은 릴리즈 키로 서명</b>되므로 기존 설정과 데이터가 유지된 채 업데이트됩니다.</div>
+      </details>
+      <details>
+        <summary>이 앱은 어떤 데이터를 수집하나요?</summary>
+        <div class="a"><b>아무것도 수집하지 않습니다.</b> 서버가 없고 모든 처리가 기기 안에서만 이뤄집니다. 네트워크 명령 실행 권한(Shizuku)만 사용합니다.</div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section class="cta-band" id="contact">
+  <div class="container">
+    <h2>지금 바로 시작해 보세요</h2>
+    <p>다운로드 후 5분이면 셋업 완료. 궁금한 점은 언제든 문의 주세요.</p>
+    <a class="btn btn-primary btn-lg" href="https://github.com/BoraSarang/SpotShift/releases/latest" target="_blank" rel="noopener">APK 다운로드</a>
+    <div style="margin-top: var(--space-5); display: flex; gap: var(--space-5); justify-content: center; flex-wrap: wrap; color: var(--color-muted-foreground); font-size: 14px;">
+      <span>📧 <a href="mailto:leeborasarang@gmail.com">leeborasarang@gmail.com</a></span>
+      <span>🐙 <a href="https://github.com/BoraSarang/SpotShift" target="_blank" rel="noopener">GitHub 저장소</a></span>
+      <span>🐞 <a href="https://github.com/BoraSarang/SpotShift/issues" target="_blank" rel="noopener">버그 신고</a></span>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <span>SpotShift v0.3.1 · 제작 BoRaSaRang · 무루트 Shizuku 기반</span>
+    <span>© 2026 · <a href="https://github.com/BoraSarang/SpotShift" target="_blank" rel="noopener">GitHub</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

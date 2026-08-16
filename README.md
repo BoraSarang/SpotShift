@@ -22,6 +22,14 @@ Android 기기를 핫스팟으로 사용하며, 설정한 주기마다 모바일
 
 ---
 
+## 실제 화면 (갤럭시 S22 실기기 촬영)
+
+| 홈 — 카운트다운 + 예상 시각 | 설정 — Shizuku 연결 + 주기 | 상태 알림 — 실행 중 · 현재 IP |
+|:---:|:---:|:---:|
+| ![홈 화면](docs/screenshots/android/v0.3.1_home.png) | ![설정 화면](docs/screenshots/android/v0.3.1_settings.png) | ![상태 알림](docs/screenshots/android/v0.3.1_notification.jpg) |
+
+---
+
 ## 설치 방법 (상세 가이드)
 
 ### 준비물

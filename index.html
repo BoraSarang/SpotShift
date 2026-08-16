@@ -114,26 +114,21 @@ img, svg { display: block; max-width: 100%; }
 /* 3D hero visual */
 .hero-visual { perspective: 1100px; }
 .phone {
-  position: relative; margin: 0 auto; width: min(300px, 80%);
+  position: relative; margin: 0 auto; width: min(260px, 74%);
   transform: rotateY(-14deg) rotateX(6deg);
   transform-style: preserve-3d;
-  background: var(--color-card); border: 1px solid var(--color-border);
-  border-radius: 28px; padding: 18px 16px 24px; box-shadow: 0 40px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04) inset;
+  background: #0B1220; border: 1px solid var(--color-border);
+  border-radius: 30px; padding: 12px; box-shadow: 0 40px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04) inset;
   transition: transform var(--duration) var(--ease);
 }
 .phone:hover { transform: rotateY(-8deg) rotateX(3deg) translateY(-6px); }
-.phone-screen { background: #0B1220; border: 1px solid var(--color-border); border-radius: 18px; padding: 16px; }
-.phone-status { display: flex; justify-content: space-between; font-size: 11px; color: var(--color-muted-foreground); margin-bottom: 12px; }
-.phone-ip { display: flex; align-items: center; justify-content: space-between; background: var(--color-primary); border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 10px; }
-.phone-ip span { font-family: var(--font-display); font-weight: 600; font-size: 13px; color: #fff; }
-.phone-ip .chip { font-size: 10px; font-weight: 700; background: rgba(255,255,255,0.15); padding: 2px 8px; border-radius: 999px; }
-.phone-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--color-border); font-size: 12px; color: var(--color-muted-foreground); }
-.phone-row:last-of-type { border-bottom: none; }
-.phone-row b { color: var(--color-foreground); font-weight: 600; }
-.phone-gauge { margin-top: 12px; }
-.phone-gauge .bar { height: 8px; border-radius: 999px; background: var(--color-muted); overflow: hidden; }
-.phone-gauge .bar i { display: block; height: 100%; width: 64%; border-radius: 999px; background: linear-gradient(90deg, var(--color-primary), var(--color-accent)); }
-.phone-gauge p { font-size: 11px; color: var(--color-muted-foreground); margin-top: 6px; }
+.phone-screen { background: #0B1220; border-radius: 20px; overflow: hidden; }
+.phone-screen img { width: 100%; height: auto; display: block; }
+.phone-cap {
+  display: flex; justify-content: center; gap: var(--space-4);
+  margin-top: var(--space-3); padding-bottom: 4px;
+}
+.phone-cap span { font-size: 11px; color: var(--color-muted-foreground); font-weight: 600; }
 .wifi-ring {
   position: absolute; top: 50%; left: 50%; width: 420px; height: 420px;
   transform: translate(-50%, -50%); pointer-events: none;
@@ -164,6 +159,17 @@ img, svg { display: block; max-width: 100%; }
 .feature .ico svg { width: 24px; height: 24px; stroke: var(--color-accent); }
 .feature h3 { font-size: 18px; font-weight: 600; margin-bottom: var(--space-2); }
 .feature p { color: var(--color-muted-foreground); font-size: 15px; }
+
+/* ===== Screenshots ===== */
+.shots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-5); }
+.shot {
+  background: var(--color-card); border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg); padding: var(--space-4);
+  transition: transform var(--duration) var(--ease), border-color var(--duration) var(--ease);
+}
+.shot:hover { transform: translateY(-4px); border-color: rgba(34,197,94,0.35); }
+.shot img { width: 100%; border-radius: var(--radius-sm); border: 1px solid var(--color-border); }
+.shot figcaption { margin-top: var(--space-3); font-size: 14px; color: var(--color-muted-foreground); text-align: center; }
 
 /* ===== Install steps ===== */
 .install { background: var(--color-muted); border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); }
@@ -218,6 +224,7 @@ img, svg { display: block; max-width: 100%; }
   .phone { transform: none; }
   .phone:hover { transform: translateY(-4px); }
   .features { grid-template-columns: 1fr; }
+  .shots { grid-template-columns: 1fr; max-width: 340px; margin: 0 auto; }
 }
 @media (max-width: 560px) {
   .container { padding: 0 var(--space-4); }
@@ -238,6 +245,7 @@ img, svg { display: block; max-width: 100%; }
     </a>
     <ul class="nav-links">
       <li><a href="#why">왜 필요한가</a></li>
+      <li><a href="#screens">실제 화면</a></li>
       <li><a href="#install">설치 방법</a></li>
       <li><a href="#faq">FAQ</a></li>
       <li><a href="#contact">문의</a></li>
@@ -267,20 +275,13 @@ img, svg { display: block; max-width: 100%; }
       </div>
     </div>
 
-    <div class="hero-visual" aria-hidden="true">
-      <div class="wifi-ring"></div>
+    <div class="hero-visual">
+      <div class="wifi-ring" aria-hidden="true"></div>
       <div class="phone">
         <div class="phone-screen">
-          <div class="phone-status"><span>SpotShift</span><span>14:42 · 예정</span></div>
-          <div class="phone-ip"><span>39.7.50.166</span><span class="chip">변경됨</span></div>
-          <div class="phone-row"><span>현재 상태</span><b>핫스팟 ON</b></div>
-          <div class="phone-row"><span>변경 주기</span><b>2시간</b></div>
-          <div class="phone-row"><span>다음 변경</span><b>14:42</b></div>
-          <div class="phone-gauge">
-            <div class="bar"><i></i></div>
-            <p>모바일 데이터 재연결 중…</p>
-          </div>
+          <img src="docs/screenshots/android/v0.3.1_home.png" alt="SpotShift 홈 화면 — 다음 변경까지 카운트다운과 예상 시각" width="1080" height="2340" loading="lazy">
         </div>
+        <div class="phone-cap" aria-hidden="true"><span>● 카운트다운</span><span>● 예상 변경 시각</span></div>
       </div>
     </div>
   </div>
@@ -309,6 +310,30 @@ img, svg { display: block; max-width: 100%; }
         <h3>무루트 · 서버 없음</h3>
         <p>루트 권한이 필요 없습니다. Shizuku만 있으면 동작하며, 모든 처리가 기기 안에서만 이뤄져 데이터가 외부로 나가지 않습니다.</p>
       </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="screens">
+  <div class="container">
+    <div class="section-head">
+      <span class="kicker">Screenshots</span>
+      <h2>실제 화면 — 갤럭시 S22에서 촬영</h2>
+      <p>히어로의 폰 화면도 모두 실제 스크린샷입니다. 앱을 설치하면 이 화면들을 그대로 보게 됩니다.</p>
+    </div>
+    <div class="shots">
+      <figure class="shot">
+        <img src="docs/screenshots/android/v0.3.1_home.png" alt="홈 화면 — 카운트다운 게이지와 예상 변경 시각" width="1080" height="2340" loading="lazy">
+        <figcaption>홈 — 변경까지 카운트다운 + 예상 시각</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="docs/screenshots/android/v0.3.1_settings.png" alt="설정 화면 — Shizuku 연결 상태와 변경 주기" width="1080" height="2340" loading="lazy">
+        <figcaption>설정 — Shizuku 연결 + 주기/스마트 조건</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="docs/screenshots/android/v0.3.1_notification.jpg" alt="상태 알림 — 로테이션 실행 중, 현재 IP와 예상 시간" width="1080" height="2340" loading="lazy">
+        <figcaption>상태 알림 — 실행 중 · 현재 IP · 예상 시간</figcaption>
+      </figure>
     </div>
   </div>
 </section>

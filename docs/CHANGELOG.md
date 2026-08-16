@@ -54,3 +54,16 @@
 - **카운트다운 버그 수정**: 홈 남은 시간이 고정되던 문제 — tick(증가만 하고 읽히지 않던 상태)을 `now`(System.currentTimeMillis 갱신 상태)로 교체해 1초마다 재구성되도록 수정. S22 검증: 1:47:38 → 1:47:24 감소 확인
 - **릴리스**: versionName 0.3.0→0.3.1, versionCode 3→4
 - 검증 (S22): pm clear로 데이터 초기화 상태에서 전 흐름 재검증 — Shizuku 서버 재시작(libshizuku.so) + 권한 재부여("연결됨"), IP 변경 110.70.58.185→39.7.50.166, 홈 "1:54:44 · 다음 변경까지 · 14:42 예정" 정확(12:42+120분), 노티 "로테이션 실행 중 · 현재 IP 39.7.50.166 · IP 변경 예상 시간 01:55" 완전 형식, 앱 시작 시 서비스 자동 시작 로그 확인, ERROR 0
+
+## v0.3.1 — 2026-08-16 — 첫 릴리즈 배포: 서명/Releases/랜딩/Pages [android]
+
+- **릴리즈 서명 설정**: keytool로 release keystore 생성(`keystore/release.jks`, RSA 2048, 유효기간 10,000일) + `signingConfigs.release` 추가 — 경로/암호는 `local.properties`에 분리 (gitignore, 커밋 제외)
+  - 해결: local.properties 커스텀 키는 AGP가 자동 노출하지 않음 → `Properties` 명시 파싱 + `rootProject.file()` 기준 경로
+- **릴리즈 빌드**: `./gradlew assembleRelease` 성공 — `app-release.apk` (11.4MB, 서명 28d941f9)
+- **S22 전환**: 디버그 서명과 충돌로 기존 앱 제거 후 릴리즈 APK 설치 성공 (versionCode 4 / versionName 0.3.1)
+- **GitHub 배포**: `BoraSarang/SpotShift` main 브랜치 push (첫 커밋) → `gh release create v0.3.1` + APK 첨부 → Draft → published (https://github.com/BoraSarang/SpotShift/releases/tag/v0.3.1)
+- **랜딩 페이지**: 루트 `index.html` — ui-ux-pro-max 디자인 시스템 (Minimalism & Swiss 다크, #0F172A + 액센트 #22C55E, Poppins/Open Sans, App Store Style 구조) + CSS 3D 폰 목업 히어로
+  - 설치 방법 4단계 세밀 반영: Shizuku 설치 → 무선 디버깅 활성화(갤럭시 경로) → 알 수 없는 소스 허용 → 권한 연결/시작 + 해외(일본) 사용 안내
+  - FAQ 6종(무루트 원리/끊김/배터리/업데이트/개인정보) + 문의 섹션
+- **README.md**: GitHub 저장소용 상세 설치 가이드 + 개발/업데이트 안내
+- **GitHub Pages**: main 브랜치 루트 배포 → https://borasarang.github.io/SpotShift/ (HTTP 200, 빌드 완료)

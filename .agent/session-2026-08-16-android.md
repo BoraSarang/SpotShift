@@ -63,3 +63,15 @@
 6. **문서 업데이트**: PLAN_v1.0_android.md(전략 변경/API 36 제약), TODO.md(T-3~T-4 완료), CHANGELOG.md(v0.1.1), error_message_ko.json(NET-0003)
 7. **오프라인 큐**: N/A (서버 없음)
 8. **E2E/k6**: N/A (단독 앱) — TC-01 성공 기록: 데이터 재연결 1회 시도 → IP 변경 성공 + 핫스팟 TetheredState 유지 + ERROR 0
+---
+
+## 세션 7차 — v0.3.1 릴리즈 배포 + 랜딩/README 설치 가이드 (2026-08-16 13:2x~)
+
+1. **무엇을**: T-완료 — 릴리즈 서명 설정 + S22 릴리즈 설치 + GitHub 배포 + 랜딩 페이지(설치 방법 세밀) + README + Pages
+2. **플랫폼**: android (단독)
+3. **빌드 결과**: `assembleRelease` 성공 (19s) — app-release.apk 11.4MB, 서명 28d941f9, v0.3.1(4). S22 설치 성공 (디버그→릴리즈 전환 위해 uninstall 후 재설치). 로그 ERROR 0
+4. **남은 TODO**: 없음 (v0.4 대기 — 자동 주기 경과 후 실제 자동 변경 실검증)
+5. **전달**: local.properties 커스텀 키는 AGP 미노출 → build.gradle.kts에서 Properties 명시 파싱 (import java.util.Properties + rootProject.file). gh 2.96.0엔 `release publish` 없음 → `gh release edit --draft=false`. keystore/암호는 local.properties (커밋 제외)
+6. **문서 업데이트**: CHANGELOG(v0.3.1 릴리즈 배포), README.md(설치 가이드), index.html(랜딩)
+7. **배포**: https://borasarang.github.io/SpotShift/ (Pages main 루트, HTTP 200) · Release v0.3.1 APK 첨부
+8. **설치 가이드 핵심**: Shizuku(무선 디버깅 활성화) → APK(알 수 없는 소스 허용 — 브라우저별 경로) → 권한 요청(항상 허용) → 주기 설정 + 핫스팟 ON. 해외(일본) 사용 안내 포함

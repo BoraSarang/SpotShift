@@ -75,3 +75,14 @@
 6. **문서 업데이트**: CHANGELOG(v0.3.1 릴리즈 배포), README.md(설치 가이드), index.html(랜딩)
 7. **배포**: https://borasarang.github.io/SpotShift/ (Pages main 루트, HTTP 200) · Release v0.3.1 APK 첨부
 8. **설치 가이드 핵심**: Shizuku(무선 디버깅 활성화) → APK(알 수 없는 소스 허용 — 브라우저별 경로) → 권한 요청(항상 허용) → 주기 설정 + 핫스팟 ON. 해외(일본) 사용 안내 포함
+
+## 세션 8차 — 랜딩 재디자인 + 스크린샷 교체 (2026-08-16 14:0x~14:4x)
+
+1. **무엇을**: 랜딩 3D 히어로 → 실제 S22 스크린샷 교체, 스크린샷 갤러리 제거, README 메인 화면 1장만 유지, 랜딩 전면 재디자인(밝은 편집적 스타일 + 모바일 고정 다운로드 바), 하단 CTA → GitHub 링크
+2. **플랫폼**: android (배포/랜딩)
+3. **빌드 결과**: 빌드 불필요(HTML). Pages 재배포 4회 모두 HTTP 200. 스크린샷 3장(홈/설정/알림) 서빙 200
+4. **남은 TODO**: 없음 — v0.4 대기 (자동 주기 경과 후 실제 자동 변경 실검증)
+5. **전달**: 텍스트 전용 모델 → 스크린샷은 adb screencap + uiautomator dump로 구조 검증 후 촬영. 알림 스크린샷은 JPEG 변환(2.5MB→294KB). 사용자 판단: 랜딩 "어색하지만 큰 문제 아님 — 넘어감"
+6. **문서 업데이트**: index.html(재디자인), README.md(메인 스크린샷 1장), docs/screenshots/android/* (스크린샷 3장)
+7. **배포 상태**: https://borasarang.github.io/SpotShift/ 라이브 · Release v0.3.1 APK 첨부됨 · 릴리즈 서명으로 S22 설치 완료
+8. **E2E/k6**: 해당 없음 (단독 앱, 서버 없음)

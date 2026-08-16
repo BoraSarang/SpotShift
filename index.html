@@ -160,17 +160,6 @@ img, svg { display: block; max-width: 100%; }
 .feature h3 { font-size: 18px; font-weight: 600; margin-bottom: var(--space-2); }
 .feature p { color: var(--color-muted-foreground); font-size: 15px; }
 
-/* ===== Screenshots ===== */
-.shots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-5); }
-.shot {
-  background: var(--color-card); border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg); padding: var(--space-4);
-  transition: transform var(--duration) var(--ease), border-color var(--duration) var(--ease);
-}
-.shot:hover { transform: translateY(-4px); border-color: rgba(34,197,94,0.35); }
-.shot img { width: 100%; border-radius: var(--radius-sm); border: 1px solid var(--color-border); }
-.shot figcaption { margin-top: var(--space-3); font-size: 14px; color: var(--color-muted-foreground); text-align: center; }
-
 /* ===== Install steps ===== */
 .install { background: var(--color-muted); border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); }
 .steps { display: grid; gap: var(--space-5); }
@@ -224,7 +213,6 @@ img, svg { display: block; max-width: 100%; }
   .phone { transform: none; }
   .phone:hover { transform: translateY(-4px); }
   .features { grid-template-columns: 1fr; }
-  .shots { grid-template-columns: 1fr; max-width: 340px; margin: 0 auto; }
 }
 @media (max-width: 560px) {
   .container { padding: 0 var(--space-4); }
@@ -245,7 +233,6 @@ img, svg { display: block; max-width: 100%; }
     </a>
     <ul class="nav-links">
       <li><a href="#why">왜 필요한가</a></li>
-      <li><a href="#screens">실제 화면</a></li>
       <li><a href="#install">설치 방법</a></li>
       <li><a href="#faq">FAQ</a></li>
       <li><a href="#contact">문의</a></li>
@@ -310,30 +297,6 @@ img, svg { display: block; max-width: 100%; }
         <h3>무루트 · 서버 없음</h3>
         <p>루트 권한이 필요 없습니다. Shizuku만 있으면 동작하며, 모든 처리가 기기 안에서만 이뤄져 데이터가 외부로 나가지 않습니다.</p>
       </div>
-    </div>
-  </div>
-</section>
-
-<section class="section" id="screens">
-  <div class="container">
-    <div class="section-head">
-      <span class="kicker">Screenshots</span>
-      <h2>실제 화면 — 갤럭시 S22에서 촬영</h2>
-      <p>히어로의 폰 화면도 모두 실제 스크린샷입니다. 앱을 설치하면 이 화면들을 그대로 보게 됩니다.</p>
-    </div>
-    <div class="shots">
-      <figure class="shot">
-        <img src="docs/screenshots/android/v0.3.1_home.png" alt="홈 화면 — 카운트다운 게이지와 예상 변경 시각" width="1080" height="2340" loading="lazy">
-        <figcaption>홈 — 변경까지 카운트다운 + 예상 시각</figcaption>
-      </figure>
-      <figure class="shot">
-        <img src="docs/screenshots/android/v0.3.1_settings.png" alt="설정 화면 — Shizuku 연결 상태와 변경 주기" width="1080" height="2340" loading="lazy">
-        <figcaption>설정 — Shizuku 연결 + 주기/스마트 조건</figcaption>
-      </figure>
-      <figure class="shot">
-        <img src="docs/screenshots/android/v0.3.1_notification.jpg" alt="상태 알림 — 로테이션 실행 중, 현재 IP와 예상 시간" width="1080" height="2340" loading="lazy">
-        <figcaption>상태 알림 — 실행 중 · 현재 IP · 예상 시간</figcaption>
-      </figure>
     </div>
   </div>
 </section>

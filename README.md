@@ -20,13 +20,7 @@ Android 기기를 핫스팟으로 사용하며, 설정한 주기마다 모바일
 
 > **해외(일본 등) 사용**: 이 페이지와 APK는 한국·일본 어디서나 접속·다운로드됩니다. Play 스토어가 필요 없으며, IP 변경은 로컬에서 이뤄지므로 로밍 상태와 무관하게 동작합니다.
 
----
-
-## 실제 화면 (갤럭시 S22 실기기 촬영)
-
-| 홈 — 카운트다운 + 예상 시각 | 설정 — Shizuku 연결 + 주기 | 상태 알림 — 실행 중 · 현재 IP |
-|:---:|:---:|:---:|
-| ![홈 화면](docs/screenshots/android/v0.3.1_home.png) | ![설정 화면](docs/screenshots/android/v0.3.1_settings.png) | ![상태 알림](docs/screenshots/android/v0.3.1_notification.jpg) |
+![메인 화면](docs/screenshots/android/v0.3.1_home.png)
 
 ---
 

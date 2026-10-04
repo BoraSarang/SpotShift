@@ -28,7 +28,13 @@ fun StatusCard(
     hotspotEnabled: Boolean,
     publicIp: String?,
     clientCount: Int?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    // v0.4 — 속도 기준 표시 (null이면 숨김)
+    speedThresholdText: String? = null,
+    // v0.4 — 최근 측정 속도 표시 (null이면 숨김)
+    lastSpeedText: String? = null,
+    // v0.4 (T-19) — 접속 상태 표시 (null이면 숨김)
+    signalText: String? = null
 ) {
     val statusColor = if (hotspotEnabled) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.error
     val statusText = if (hotspotEnabled) "핫스팟 켜짐" else "핫스팟 꺼짐"
@@ -73,6 +79,27 @@ fun StatusCard(
                 if (clientCount != null) {
                     Text(
                         text = "연결 기기: ${clientCount}대",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                if (speedThresholdText != null) {
+                    Text(
+                        text = speedThresholdText,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                if (lastSpeedText != null) {
+                    Text(
+                        text = lastSpeedText,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                }
+                if (signalText != null) {
+                    Text(
+                        text = signalText,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

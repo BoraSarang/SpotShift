@@ -3,6 +3,7 @@ package com.borasarang.spotshift.data
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -29,7 +30,13 @@ class Prefs(private val context: Context) {
             fallbackEnabled = prefs[KEY_FALLBACK] ?: true,
             hotspotAutoEnable = prefs[KEY_HOTSPOT_AUTO] ?: true,
             lastRotationAt = prefs[KEY_LAST_ROTATION_AT] ?: 0L,
-            lastKnownIp = prefs[KEY_LAST_KNOWN_IP]
+            lastKnownIp = prefs[KEY_LAST_KNOWN_IP],
+            // v0.4 (T-17/T-18)
+            speedCheckEnabled = prefs[KEY_SPEED_CHECK] ?: true,
+            speedThresholdMbps = prefs[KEY_SPEED_THRESHOLD] ?: 1.0f,
+            speedMaxRechecks = prefs[KEY_SPEED_RECHECKS] ?: 3,
+            bootAutoStart = prefs[KEY_BOOT_AUTO] ?: true,
+            eventAlertEnabled = prefs[KEY_EVENT_ALERT] ?: true
         )
     }
 
@@ -50,6 +57,11 @@ class Prefs(private val context: Context) {
             prefs[KEY_FALLBACK] = config.fallbackEnabled
             prefs[KEY_HOTSPOT_AUTO] = config.hotspotAutoEnable
             prefs[KEY_LAST_ROTATION_AT] = config.lastRotationAt
+            prefs[KEY_SPEED_CHECK] = config.speedCheckEnabled
+            prefs[KEY_SPEED_THRESHOLD] = config.speedThresholdMbps
+            prefs[KEY_SPEED_RECHECKS] = config.speedMaxRechecks
+            prefs[KEY_BOOT_AUTO] = config.bootAutoStart
+            prefs[KEY_EVENT_ALERT] = config.eventAlertEnabled
             if (config.lastKnownIp != null) prefs[KEY_LAST_KNOWN_IP] = config.lastKnownIp
             else prefs.remove(KEY_LAST_KNOWN_IP)
         }
@@ -74,6 +86,17 @@ class Prefs(private val context: Context) {
         runCatching {
             com.google.gson.Gson().fromJson(raw, Array<RotationRecord>::class.java).toList()
         }.getOrDefault(emptyList())
+    }
+
+    // v0.4 — 최근 측정 속도 (홈 상태카드 표시용)
+    val lastSpeedFlow: Flow<Float?> = context.dataStore.data.map { prefs ->
+        prefs[KEY_LAST_SPEED]
+    }
+
+    suspend fun updateLastSpeed(mbps: Float) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_LAST_SPEED] = mbps
+        }
     }
 
     suspend fun getRecords(): List<RotationRecord> = recordsFlow.first()
@@ -115,6 +138,15 @@ class Prefs(private val context: Context) {
         private val KEY_LAST_ROTATION_AT = longPreferencesKey("last_rotation_at")
         private val KEY_LAST_KNOWN_IP = stringPreferencesKey("last_known_ip")
         private val KEY_RECORDS = stringPreferencesKey("records_json")
+        // v0.4 — 최근 측정 속도
+        private val KEY_LAST_SPEED = floatPreferencesKey("last_speed_mbps")
+        // v0.4 (T-17/T-18)
+        private val KEY_SPEED_CHECK = booleanPreferencesKey("speed_check_enabled")
+        private val KEY_SPEED_THRESHOLD = floatPreferencesKey("speed_threshold_mbps")
+        private val KEY_SPEED_RECHECKS = intPreferencesKey("speed_max_rechecks")
+        private val KEY_BOOT_AUTO = booleanPreferencesKey("boot_auto_start")
+        // v0.4 — 변경 시작/완료 알림
+        private val KEY_EVENT_ALERT = booleanPreferencesKey("event_alert_enabled")
 
         private const val MAX_RECORDS = 200
     }

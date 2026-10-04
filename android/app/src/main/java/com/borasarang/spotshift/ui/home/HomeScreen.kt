@@ -40,6 +40,7 @@ import com.borasarang.spotshift.data.RotationPhase
 import com.borasarang.spotshift.ui.components.ConditionChip
 import com.borasarang.spotshift.ui.components.CountdownGauge
 import com.borasarang.spotshift.ui.components.MainActionButton
+import com.borasarang.spotshift.ui.components.RecentChangeCard
 import com.borasarang.spotshift.ui.components.RotationProgress
 import com.borasarang.spotshift.ui.components.StatusCard
 import kotlinx.coroutines.delay
@@ -54,6 +55,8 @@ fun HomeScreen(contentPadding: PaddingValues) {
     val hotspotController = remember { HotspotController(context) }
     var hotspotEnabled by remember { mutableStateOf(false) }
     var publicIp by remember { mutableStateOf<String?>(null) }
+    // v0.4 (T-19) — 접속 상태 5초 폴링
+    var signalText by remember { mutableStateOf<String?>(null) }
     // v0.3 — 마지막 변경 시각은 Prefs(config)에서 구독 — 앱 재시작/자동 변경에도 유지
     val lastRotationAt = config.lastRotationAt
 
@@ -63,6 +66,7 @@ fun HomeScreen(contentPadding: PaddingValues) {
             if (publicIp == null) {
                 publicIp = com.borasarang.spotshift.core.IpVerifier().fetchPublicIp()
             }
+            signalText = com.borasarang.spotshift.core.SignalMonitor(context).snapshot().display()
             delay(5_000)
         }
     }
@@ -90,7 +94,10 @@ fun HomeScreen(contentPadding: PaddingValues) {
 
     val rotationState = viewModel.rotationState
     val running = rotationState.phase !in listOf(RotationPhase.IDLE, RotationPhase.SUCCESS, RotationPhase.FAILED)
-    val shizukuReady = ShizukuManager.isReady
+    // v0.4 — Shizuku 상태 구독 (스냅샷 고착 수정)
+    val shizukuReady by viewModel.shizukuReady.collectAsState()
+    val lastSpeed by viewModel.lastSpeed.collectAsState()
+    val records by viewModel.records.collectAsState()
 
     Column(
         modifier = Modifier
@@ -126,8 +133,22 @@ fun HomeScreen(contentPadding: PaddingValues) {
         StatusCard(
             hotspotEnabled = hotspotEnabled,
             publicIp = publicIp ?: viewModel.rotationState.currentIp,
-            clientCount = null
+            clientCount = null,
+            // v0.4 — 속도 기준 표시
+            speedThresholdText = if (config.speedCheckEnabled) {
+                "속도 기준: ${"%.1f".format(config.speedThresholdMbps)}Mbps 미만 시 변경"
+            } else null,
+            // v0.4 — 최근 변경 요약 (x→y + 측정 속도/사유)
+            lastSpeedText = lastSpeed?.let { "최근 측정: ${"%.1f".format(it)}Mbps" },
+            // v0.4 (T-19) — 접속 상태 표시
+            signalText = signalText
         )
+
+        val latestRecord = records.firstOrNull()
+        if (latestRecord != null) {
+            Spacer(Modifier.height(16.dp))
+            RecentChangeCard(record = latestRecord)
+        }
 
         Spacer(Modifier.height(28.dp))
         // v0.3.1 — 변경 이력이 없으면 카운트다운 대신 안내 표시 (2:00:00 전체 표시 오해 방지)
@@ -189,7 +210,11 @@ fun HomeScreen(contentPadding: PaddingValues) {
             enabled = shizukuReady,
             running = running,
             onClick = {
-                if (running) {
+                // v0.4 — Shizuku 미승인 상태에서 버튼을 누르면 권한 요청 동작
+                if (!shizukuReady) {
+                    DebugLogger.feature("HomeScreen", "메인 버튼 권한 요청")
+                    viewModel.requestShizukuPermission()
+                } else if (running) {
                     viewModel.setEnabled(false)
                 } else {
                     viewModel.setEnabled(true)

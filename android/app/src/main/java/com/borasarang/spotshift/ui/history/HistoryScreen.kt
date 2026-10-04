@@ -91,6 +91,8 @@ private fun RecordItem(record: RotationRecord) {
     val statusColor = when {
         record.changed -> MaterialTheme.colorScheme.secondary
         record.errorCode != null -> MaterialTheme.colorScheme.error
+        // v0.4 — 스킵 기록(note)은 실패가 아니므로 중립색
+        record.note != null -> MaterialTheme.colorScheme.onSurfaceVariant
         else -> MaterialTheme.colorScheme.error
     }
     Surface(
@@ -110,28 +112,31 @@ private fun RecordItem(record: RotationRecord) {
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Text(
-                        text = record.oldIp ?: "-",
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Icon(
-                        imageVector = Icons.Outlined.ArrowForward,
-                        contentDescription = "→",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 2.dp)
-                    )
-                    Text(
-                        text = record.newIp ?: "-",
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                // v0.4 — 속도 단독 기록은 IP 행 없이 사유만 표시
+                if (record.oldIp != null || record.newIp != null) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = record.oldIp ?: "-",
+                            style = MaterialTheme.typography.bodyMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Icon(
+                            imageVector = Icons.Outlined.ArrowForward,
+                            contentDescription = "→",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 2.dp)
+                        )
+                        Text(
+                            text = record.newIp ?: "-",
+                            style = MaterialTheme.typography.bodyMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
                 Text(
                     text = buildSummary(record),
@@ -144,6 +149,10 @@ private fun RecordItem(record: RotationRecord) {
 }
 
 private fun buildSummary(record: RotationRecord): String {
+    // v0.4 — 순수 스킵 기록은 사유만 표시
+    if (!record.changed && record.errorCode == null) {
+        return record.note ?: "건너뜀"
+    }
     val result = if (record.changed) "성공" else "실패"
     val method = when (record.method) {
         RotationRecord.METHOD_DATA_RECONNECT -> "데이터 재연결"
@@ -153,5 +162,6 @@ private fun buildSummary(record: RotationRecord): String {
     }
     val retry = if (record.retryCount > 0) " · 재시도 ${record.retryCount}회" else ""
     val error = record.errorCode?.let { " · $it" } ?: ""
-    return "$result · $method${retry} · ${record.durationMs / 1000}s$error"
+    val note = record.note?.let { " · $it" } ?: ""
+    return "$result · $method${retry} · ${record.durationMs / 1000}s$error$note"
 }

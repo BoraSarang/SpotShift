@@ -32,14 +32,15 @@ fun MainActionButton(
         else -> "IP 변경 시작"
     }
     Button(
+        // v0.4 — 미승인 상태에서도 클릭 가능 (권한 요청 동작)
         onClick = onClick,
-        enabled = enabled,
+        enabled = true,
         modifier = modifier
             .fillMaxWidth()
             .height(56.dp),
         shape = RoundedCornerShape(28.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = containerColor,
+            containerColor = if (enabled) containerColor else MaterialTheme.colorScheme.surfaceVariant,
             contentColor = Color.White,
             disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
             disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant

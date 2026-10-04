@@ -35,6 +35,8 @@ class RotationEngine(
     private var _state = RotationState()
     val state: RotationState get() = _state
     private val mutex = Mutex()
+    // v0.4 — 변경 알림 토글 상태 (rotate() 진입 시 config에서 복사)
+    private var eventAlert = true
 
     var onStateChanged: ((RotationState) -> Unit)? = null
     var onRotationStarted: (() -> Unit)? = null
@@ -53,13 +55,12 @@ class RotationEngine(
 
     suspend fun rotate(config: RotationConfig): RotationRecord = mutex.withLock {
         onRotationStarted?.invoke()
-        // v0.2 — 요구사항 4: IP 변경 시작 알림
-        notifyEvent("IP 변경 시작", "모바일 데이터를 재연결하여 IP를 변경합니다")
+        eventAlert = config.eventAlertEnabled
+        // v0.4 — 시작 알림은 상태 알림이 phase로 표시하므로 별도 발행 없음 (단일 알림)
         val record = rotateInternal(config)
         // v0.2 — 요구사항 5: 핫스팟 자동 켜기 옵션 확인 (회전 성공/실패 무관)
         if (config.hotspotAutoEnable && !hotspotController.isHotspotEnabled()) {
             DebugLogger.w("[NET] 핫스팟 꺼짐 감지 — 자동 켜기 시도")
-            notifyEvent("핫스팟이 꺼져 있습니다", "SpotShift 설정에서 핫스팟을 다시 켜주세요")
             onHotspotOffDetected?.invoke()
         }
         onRotationCompletedNotify?.invoke(record)
@@ -176,6 +177,9 @@ class RotationEngine(
             )
         }
         // v0.2 — 요구사항 4: IP 변경 완료 알림 (x → y)
+        // v0.4 — 단일 알림: 상태 알림이 본문을 표시하므로 완료 ping은 소리용으로만,
+        // 10초 후 자동 소멸 (토글 OFF면 생략)
+        if (!eventAlert) return record
         if (record.changed) {
             notifyEvent(
                 "IP 변경 완료",
@@ -204,13 +208,16 @@ class RotationEngine(
             ).apply { description = "IP 변경 시작/완료 이벤트를 알립니다." }
         )
         val notification = NotificationCompat.Builder(context, CHANNEL_EVENT)
-            .setSmallIcon(android.R.drawable.ic_menu_share)
+            .setSmallIcon(com.borasarang.spotshift.R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(text)
             .setAutoCancel(true)
+            // v0.4 — 소리용 일시 ping: 10초 후 자동 소멸 (상시 1개 유지)
+            .setTimeoutAfter(TRANSIENT_TIMEOUT_MILLIS)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .build()
-        nm.notify(System.currentTimeMillis().toInt() % Int.MAX_VALUE, notification)
+        // v0.4 — 시작/완료를 같은 ID로 갱신 (알림 쌓임 방지)
+        nm.notify(EVENT_NOTIFICATION_ID, notification)
     }
 
     private fun elapsed(start: Long) = System.currentTimeMillis() - start
@@ -218,5 +225,9 @@ class RotationEngine(
     companion object {
         private const val RETRY_DELAY_MILLIS = 10_000L
         const val CHANNEL_EVENT = "spotshift_event"
+        // v0.4 — 이벤트 알림 단일 ID (시작→완료 갱신)
+        private const val EVENT_NOTIFICATION_ID = 1003
+        // v0.4 — 완료 ping 자동 소멸 시간
+        private const val TRANSIENT_TIMEOUT_MILLIS = 10_000L
     }
 }

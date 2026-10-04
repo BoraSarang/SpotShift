@@ -20,3 +20,7 @@
 | T-14 | 홈 게이지: "다음 변경까지 · 14:02 예정" (남은 시간 + 예상 시각 병기) | android | 완료 | S22 검증 — lastRotationAt을 Prefs 구독으로 변경(재시작 유지), 11:04+60분=12:04 예정 정확 |
 | T-15 | RotationProgress 진행 단계 표시 (프로그레스 바 + 단계 텍스트) | android | 완료 | S22 검증 — "모바일 데이터 재연결 중"→"IP 변경 완료" 표시. HomeViewModel.rotationState를 mutableStateOf로 수정(기존 버그: 일반 var라 UI 미갱신) |
 | T-16 | 설정 탭 문의 섹션 (제작자/문의 메일/GitHub/버전) | android | 완료 | S22 검증 — 제작자/leeborasarang@gmail.com(mailto→Gmail)/GitHub(→브라우저)/v0.3.0. versionName 0.3.0으로 갱신 |
+| T-17 | v0.4-F1 속도 기반 조건부 실행 (측정→저속만 로테이션→재측정, 페일오픈) | android | 완료 | S22 실검증 통과, E-AND-NET-0004 |
+| T-18 | v0.4-F2 부팅 자동 복원 + 설정 토글 (BootReceiver/재등록/Shizuku 유도알림) | android | 완료 | S22 실검증 통과 (TC-09~10), E-AND-SCH-0002 |
+| T-19 | 홈 통신사/신호 표시 (KT·LTE·RSRP/RSRQ/SINR) — 위치 권한 필요 | android | 완료 | S22 실검증 — 권한 다이얼로그 + 상태카드 표시 확인, rat은 전화 권한 후 LTE 표시 |
+| T-20 | Mac 원격 IP 변경 (adb intent + 스크립트, 미실행 시 실행 후 변경) | android+mac | 완료 | MainActivity EXTRA_AUTOROTATE(singleTop) + development/scripts/spotshift_rotate.sh, S22 실검증 (175.223.10.220→39.7.51.57) |

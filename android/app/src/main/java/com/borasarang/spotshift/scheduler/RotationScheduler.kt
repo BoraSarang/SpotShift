@@ -4,6 +4,7 @@ import android.content.Context
 import com.borasarang.spotshift.DebugLogger
 import com.borasarang.spotshift.core.IpVerifier
 import com.borasarang.spotshift.core.RotationEngine
+import com.borasarang.spotshift.core.SpeedChecker
 import com.borasarang.spotshift.data.Prefs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,7 +25,8 @@ import kotlinx.coroutines.launch
 class RotationScheduler(
     private val context: Context,
     private val engine: RotationEngine,
-    private val conditions: Conditions
+    private val conditions: Conditions,
+    private val speedChecker: SpeedChecker = SpeedChecker()
 ) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -48,12 +50,7 @@ class RotationScheduler(
                     } else {
                         val result = conditions.evaluate(config)
                         if (result.passed) {
-                            val record = engine.rotate(config)
-                            prefs.addRecord(record)
-                            if (record.changed && record.newIp != null) {
-                                prefs.updateRotationMeta(System.currentTimeMillis(), record.newIp)
-                            }
-                            onRotationCompleted?.invoke(record)
+                            runSpeedGatedRotation(config)
                         } else {
                             DebugLogger.i("[SCH] 조건 미충족으로 스킵: ${result.skippedReason}")
                         }
@@ -96,6 +93,65 @@ class RotationScheduler(
         job = null
     }
 
+    /**
+     * v0.4 (T-17) — 속도 기반 조건부 실행.
+     * 저속일 때만 로테이션하고 30초 후 재측정 (최대 N회). 정상 속도면 스킵+기록.
+     * 측정 실패 시 페일오픈: 로테이션을 강행한다.
+     */
+    private suspend fun runSpeedGatedRotation(config: com.borasarang.spotshift.data.RotationConfig) {
+        if (!config.speedCheckEnabled) {
+            rotateOnce(config)
+            return
+        }
+        val maxAttempts = config.speedMaxRechecks.coerceAtLeast(1)
+        val threshold = config.speedThresholdMbps
+        repeat(maxAttempts) { index ->
+            val speed = speedChecker.measure()
+            if (!speed.success) {
+                DebugLogger.e("[SCH] 속도 측정 실패 — 페일오픈 로테이션", "E-AND-NET-0004")
+                rotateOnce(config, "속도 측정 실패 후 강행(E-AND-NET-0004)")
+                return
+            }
+            val mbps = speed.mbps ?: 0.0
+            prefs.updateLastSpeed(mbps.toFloat())
+            val label = "%.2f".format(mbps)
+            if (mbps >= threshold) {
+                // v0.4 — 측정 1회 = 기록 1건 (건너뜀)
+                prefs.addRecord(
+                    com.borasarang.spotshift.data.RotationRecord(
+                        changed = false,
+                        method = com.borasarang.spotshift.data.RotationRecord.METHOD_SPEED_CHECK,
+                        note = "측정 ${label}Mbps ≥ 기준 ${threshold}Mbps — 건너뜀"
+                    )
+                )
+                DebugLogger.i("[SCH] 속도 정상(${label}Mbps) — 건너뜀")
+                return
+            }
+            // v0.4 — 측정 1회 = 기록 1건 (저속 → 변경 실행)
+            prefs.addRecord(
+                com.borasarang.spotshift.data.RotationRecord(
+                    changed = false,
+                    method = com.borasarang.spotshift.data.RotationRecord.METHOD_SPEED_CHECK,
+                    note = "측정 ${label}Mbps < 기준 ${threshold}Mbps — 변경 실행"
+                )
+            )
+            DebugLogger.i("[SCH] 저속 감지(${label}Mbps < 임계 ${threshold}Mbps) — 로테이션 ${index + 1}/$maxAttempts")
+            rotateOnce(config, "측정 ${label}Mbps < 기준 ${threshold}Mbps")
+            delay(RECHECK_DELAY_MILLIS)
+        }
+        DebugLogger.i("[SCH] 최대 반복 도달 — 종료")
+    }
+
+    private suspend fun rotateOnce(config: com.borasarang.spotshift.data.RotationConfig, note: String? = null) {
+        val base = engine.rotate(config)
+        val record = if (note != null) base.copy(note = note) else base
+        prefs.addRecord(record)
+        if (record.changed && record.newIp != null) {
+            prefs.updateRotationMeta(System.currentTimeMillis(), record.newIp)
+        }
+        onRotationCompleted?.invoke(record)
+    }
+
     fun destroy() {
         stop()
         scope.cancel()
@@ -109,5 +165,6 @@ class RotationScheduler(
     companion object {
         private const val STARTUP_DELAY_MILLIS = 5_000L
         private const val MIN_INTERVAL_MINUTES = 1
+        private const val RECHECK_DELAY_MILLIS = 30_000L
     }
 }

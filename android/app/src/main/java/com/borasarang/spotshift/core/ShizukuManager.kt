@@ -13,6 +13,22 @@ object ShizukuManager {
     private const val REQUEST_CODE = 10001
     private const val SHELL_TIMEOUT_MILLIS = 20_000L
 
+    // v0.4 — 승인 후 UI가 스냅샷에 갇히는 버그 수정: 준비 상태를 Flow로 노출
+    private val _ready = kotlinx.coroutines.flow.MutableStateFlow(isReady)
+    val ready: kotlinx.coroutines.flow.StateFlow<Boolean> = _ready
+
+    init {
+        runCatching {
+            Shizuku.addBinderReceivedListenerSticky { refresh() }
+            Shizuku.addBinderDeadListener { refresh() }
+            Shizuku.addRequestPermissionResultListener { _, _ -> refresh() }
+        }
+    }
+
+    fun refresh() {
+        runCatching { _ready.value = isReady }
+    }
+
     val isShizukuAvailable: Boolean
         get() = Shizuku.pingBinder()
 
@@ -27,6 +43,7 @@ object ShizukuManager {
         if (isPermissionGranted) return true
         try {
             Shizuku.requestPermission(REQUEST_CODE)
+            refresh()
             return true
         } catch (e: Exception) {
             DebugLogger.e("Shizuku 권한 요청 실패", "E-AND-PERM-0001", e)

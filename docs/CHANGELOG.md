@@ -2,6 +2,15 @@
 
 > 형식: `[android] 버전 — 날짜 — 요약 (에러코드/성능 기록)`
 
+## v0.4.0 — 2026-10-04 — 속도 조건 + 부팅 복원 [android] (구현 완료·실검증 대기)
+
+- **신규 T-17**: `SpeedChecker`(1MB 다운로드 Mbps 환산, INTERNET 권한만) + 스케줄러 속도 게이트 (저속만 로테이션→30초 후 재측정 최대 3회, 정상은 스킵+기록, 측정 실패는 페일오픈) — E-AND-NET-0004
+- **신규 T-18**: `BootReceiver`(BOOT_COMPLETED/QUICKBOOT_POWERON) + 설정 "부팅 시 자동 시작"(기본 ON) + Shizuku 미연결 시 재시작 유도 알림 — E-AND-SCH-0002
+- UI: 설정 "속도 조건" 섹션(토글/기준 0.5~3.0Mbps/최대반복) + 홈 상태카드 속도 기준/최근 측정 표시 + 홈 "최근 변경" 카드(x→y·방식·측정속도·시각) + 기록 스킵 중립색
+- 수정: Shizuku 승인 후 상태 고착 버그 (StateFlow 반응형 전환 — HomeViewModel.shizukuReady) + 최근 측정 속도 저장/표시 (Prefs.lastSpeed) + 실행 시 Shizuku 미승인이면 자동 요청 (MainActivity onResume, 프로세스당 1회) + Shizuku 사망 시 권한 버튼이 Shizuku 앱 실행으로 폴백 (무응답 수정) + 메인 버튼 미승인 시 권한 요청 동작 + 설정 "배터리" 섹션 (최적화 제외 요청·복귀 시 갱신) + 측정 엔드포인트 교체 (tele2 연결 거부 실측 → Cloudflare __down 1MB) + 알림 단일화 (시작 알림 폐지·완료 ping 10초 후 자동 소멸·기존 잔재 자동 정리) + 설정 "완료 시 소리 알림" 토글 + 전용 알림 아이콘 (ic_notification) + 홈 접속 상태 표시 (SignalMonitor: 통신사·RAT·RSRP/RSRQ/SINR, 위치/전화 권한) + 측정 1회=기록 1건 (SPEED_CHECK) + Mac 원격 변경 (EXTRA_AUTOROTATE + spotshift_rotate.sh, 실검증 성공)
+- 빌드: `./gradlew assembleDebug` 성공, S22 설치+실행 ERROR 0, BootReceiver 등록 확인
+- 검증 대기: TC-09~13 (재부팅·속도 분기 — 테더 세션 보호로 원격 재부팅 불가, 다음 실기회에서 검증)
+
 ## v0.1.0 — 2026-08-16 — 초기 프로젝트 세팅 [android]
 
 - 문서 골격: PLAN_v1.0_android.md / TODO.md / AGENTS.android.md / DESIGN.md / PRD.md / error_message_ko.json (E-AND-NET-0001~0003, E-AND-PERM-0001~0002, E-AND-SCH-0001, E-AND-SRV-0001, E-AND-STOR-0001)

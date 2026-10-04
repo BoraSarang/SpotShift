@@ -15,6 +15,7 @@ import com.borasarang.spotshift.core.HotspotController
 import com.borasarang.spotshift.core.IpVerifier
 import com.borasarang.spotshift.core.RotationEngine
 import com.borasarang.spotshift.core.ShizukuManager
+import com.borasarang.spotshift.core.SpeedChecker
 import com.borasarang.spotshift.data.Prefs
 import com.borasarang.spotshift.data.RotationConfig
 import com.borasarang.spotshift.data.RotationRecord
@@ -29,10 +30,46 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
 
     private val prefs = Prefs(app)
 
+    // v0.4 — 수동 변경 후 속도 측정용
+    private val speedChecker = SpeedChecker()
+
     val config: StateFlow<RotationConfig> = prefs.configFlow
         .stateIn(viewModelScope, SharingStarted.Eagerly, RotationConfig())
     val records: StateFlow<List<RotationRecord>> = prefs.recordsFlow
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    // v0.4 — Shizuku 준비 상태 반응형 (승인 후 스냅샷 고착 버그 수정)
+    val shizukuReady: StateFlow<Boolean> = ShizukuManager.ready
+    // v0.4 — 배터리 최적화 제외 상태 (삼성 백그라운드 종료 방지)
+    private val _batteryUnrestricted =
+        kotlinx.coroutines.flow.MutableStateFlow(isBatteryUnrestricted())
+    val batteryUnrestricted: kotlinx.coroutines.flow.StateFlow<Boolean> = _batteryUnrestricted
+
+    fun isBatteryUnrestricted(): Boolean {
+        val pm = getApplication<Application>().getSystemService(android.os.PowerManager::class.java)
+            ?: return false
+        return pm.isIgnoringBatteryOptimizations(getApplication<Application>().packageName)
+    }
+
+    fun refreshBatteryState() {
+        _batteryUnrestricted.value = isBatteryUnrestricted()
+    }
+
+    /**
+     * v0.4 — 시스템 배터리 최적화 설정 화면으로 이동.
+     * 목록에서 SpotShift를 찾아 "제한 없음"으로 직접 변경한다.
+     */
+    fun openBatteryOptimizationSettings() {
+        DebugLogger.feature("HomeViewModel", "배터리 최적화 설정 열기")
+        runCatching {
+            val intent = Intent(
+                android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS
+            ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            getApplication<Application>().startActivity(intent)
+        }
+    }
+    // v0.4 — 최근 측정 속도 표시용
+    val lastSpeed: StateFlow<Float?> = prefs.lastSpeedFlow
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     val engine = RotationEngine(
         context = app,
@@ -64,7 +101,25 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
 
     fun isShizukuReady(): Boolean = ShizukuManager.isReady
 
-    fun requestShizukuPermission(): Boolean = ShizukuManager.requestPermission()
+    companion object {
+        private const val SHIZUKU_PACKAGE = "moe.shizuku.privileged.api"
+    }
+
+    // v0.4 — Shizuku 서비스 사망 시 권한 요청이 무응답이던 문제 수정:
+    // 앱 실행 유도로 폴백 (다이얼로그를 띄울 바인더 자체가 없음)
+    fun requestShizukuPermission(): Boolean {
+        if (!ShizukuManager.isShizukuAvailable) {
+            DebugLogger.e("Shizuku 미실행 — Shizuku 앱 실행 유도", "E-AND-PERM-0002")
+            runCatching {
+                val launch = getApplication<Application>().packageManager
+                    .getLaunchIntentForPackage(SHIZUKU_PACKAGE)
+                    ?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                if (launch != null) getApplication<Application>().startActivity(launch)
+            }
+            return false
+        }
+        return ShizukuManager.requestPermission()
+    }
 
     fun setEnabled(enabled: Boolean) {
         viewModelScope.launch {
@@ -94,7 +149,23 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                 DebugLogger.e("Shizuku 미준비 — 수동 실행 불가", "E-AND-PERM-0002")
                 return@launch
             }
-            val record = engine.rotate(config.value)
+            val base = engine.rotate(config.value)
+            // v0.4 — 수동 변경 후에도 속도 측정·표시 (자동 경로와 동일 정보)
+            // 측정 1회 = 기록 1건 (측정 기록 먼저 → 변경 기록이 최신으로 표시)
+            val speed = speedChecker.measure()
+            val speedNote = if (speed.success && speed.mbps != null) {
+                prefs.updateLastSpeed(speed.mbps.toFloat())
+                val label = "%.2f".format(speed.mbps)
+                prefs.addRecord(
+                    RotationRecord(
+                        changed = false,
+                        method = RotationRecord.METHOD_SPEED_CHECK,
+                        note = "측정 ${label}Mbps"
+                    )
+                )
+                "측정 ${label}Mbps"
+            } else null
+            val record = if (speedNote != null) base.copy(note = speedNote) else base
             prefs.addRecord(record)
             if (record.changed && record.newIp != null) {
                 prefs.updateRotationMeta(System.currentTimeMillis(), record.newIp)

@@ -9,13 +9,17 @@ data class RotationRecord(
     val method: String = METHOD_NONE,
     val retryCount: Int = 0,
     val durationMs: Long = 0L,
-    val errorCode: String? = null
+    val errorCode: String? = null,
+    // v0.4 — 스킵 사유 등 표시용 메모 (기존 기록과 호환: null 허용)
+    val note: String? = null
 ) {
     companion object {
         const val METHOD_NONE = "NONE"
         const val METHOD_DATA_RECONNECT = "DATA_RECONNECT"
         const val METHOD_AIRPLANE = "AIRPLANE"
         const val METHOD_HOTSPOT_RESTART = "HOTSPOT_RESTART"
+        // v0.4 — 속도 측정 단독 기록
+        const val METHOD_SPEED_CHECK = "SPEED_CHECK"
     }
 }
 
@@ -31,7 +35,15 @@ data class RotationConfig(
     val fallbackEnabled: Boolean = true,
     val hotspotAutoEnable: Boolean = true,
     val lastRotationAt: Long = 0L,
-    val lastKnownIp: String? = null
+    val lastKnownIp: String? = null,
+    // v0.4 (T-17) — 속도 기반 조건부 실행
+    val speedCheckEnabled: Boolean = true,
+    val speedThresholdMbps: Float = 1.0f,
+    val speedMaxRechecks: Int = 3,
+    // v0.4 (T-18) — 부팅 시 자동 시작
+    val bootAutoStart: Boolean = true,
+    // v0.4 — 변경 시작/완료 알림 (끄면 상태 알림만 유지)
+    val eventAlertEnabled: Boolean = true
 )
 
 enum class RotationPhase {

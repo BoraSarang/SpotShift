@@ -22,12 +22,16 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -43,7 +47,21 @@ fun SettingsScreen(contentPadding: PaddingValues) {
     DebugLogger.feature("SettingsScreen", "표시됨")
     val viewModel: HomeViewModel = viewModel()
     val config by viewModel.config.collectAsState()
+    // v0.4 — Shizuku 상태 구독 (스냅샷 고착 수정)
+    val shizukuReady by viewModel.shizukuReady.collectAsState()
+    val batteryUnrestricted by viewModel.batteryUnrestricted.collectAsState()
     val context = LocalContext.current
+
+    // v0.4 — 시스템 설정에서 돌아오면 배터리 상태 갱신
+    DisposableEffect(Unit) {
+        val lifecycle = (context as? ComponentActivity)?.lifecycle
+        if (lifecycle == null) return@DisposableEffect onDispose { }
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) viewModel.refreshBatteryState()
+        }
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer) }
+    }
 
     var intervalMinutes by remember { mutableStateOf(config.intervalMinutes) }
     var enabled by remember { mutableStateOf(config.enabled) }
@@ -52,6 +70,12 @@ fun SettingsScreen(contentPadding: PaddingValues) {
     var retryCount by remember { mutableStateOf(config.retryCount) }
     var fallbackEnabled by remember { mutableStateOf(config.fallbackEnabled) }
     var hotspotAutoEnable by remember { mutableStateOf(config.hotspotAutoEnable) }
+    // v0.4 (T-17/T-18)
+    var speedCheckEnabled by remember { mutableStateOf(config.speedCheckEnabled) }
+    var speedThreshold by remember { mutableStateOf(config.speedThresholdMbps) }
+    var speedMaxRechecks by remember { mutableStateOf(config.speedMaxRechecks) }
+    var bootAutoStart by remember { mutableStateOf(config.bootAutoStart) }
+    var eventAlertEnabled by remember { mutableStateOf(config.eventAlertEnabled) }
 
     Column(
         modifier = Modifier
@@ -74,9 +98,9 @@ fun SettingsScreen(contentPadding: PaddingValues) {
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = if (ShizukuManager.isReady) "연결됨" else "연결 필요",
+                    text = if (shizukuReady) "연결됨" else "연결 필요",
                     style = MaterialTheme.typography.titleMedium,
-                    color = if (ShizukuManager.isReady) {
+                    color = if (shizukuReady) {
                         MaterialTheme.colorScheme.secondary
                     } else {
                         MaterialTheme.colorScheme.error
@@ -89,6 +113,45 @@ fun SettingsScreen(contentPadding: PaddingValues) {
                 }) {
                     Text("권한 요청")
                 }
+            }
+        }
+
+        // v0.4 — 배터리 최적화 제외 (삼성 백그라운드 종료 방지)
+        SectionTitle("배터리")
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surface
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = if (batteryUnrestricted) "제한 없음" else "최적화 중",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = if (batteryUnrestricted) {
+                            MaterialTheme.colorScheme.secondary
+                        } else {
+                            // v0.4 — 최적화 중은 기본 상태라 실패색 대신 중립색
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (!batteryUnrestricted) {
+                        OutlinedButton(onClick = {
+                            viewModel.openBatteryOptimizationSettings()
+                        }) {
+                            Text("설정 열기")
+                        }
+                    }
+                }
+                Text(
+                    "백그라운드에서 강제 종료되지 않도록 배터리 최적화에서 제외합니다.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
 
@@ -152,6 +215,63 @@ fun SettingsScreen(contentPadding: PaddingValues) {
                     },
                     valueRange = -120f..-60f,
                     steps = 11
+                )
+            }
+        }
+
+        // v0.4 (T-17) — 속도 기반 조건부 실행
+        SectionTitle("속도 조건")
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surface
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("저속일 때만 변경", style = MaterialTheme.typography.bodyLarge)
+                    Switch(
+                        checked = speedCheckEnabled,
+                        onCheckedChange = { value ->
+                            speedCheckEnabled = value
+                            viewModel.saveConfig { it.copy(speedCheckEnabled = value) }
+                        }
+                    )
+                }
+                Text(
+                    "주기마다 속도를 측정해 기준 미만일 때만 IP를 변경합니다. (측정 1회 약 1MB)",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                Text(
+                    "속도 기준: ${"%.1f".format(speedThreshold)}Mbps",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Slider(
+                    value = speedThreshold,
+                    onValueChange = { speedThreshold = it },
+                    onValueChangeFinished = {
+                        viewModel.saveConfig { it.copy(speedThresholdMbps = speedThreshold) }
+                    },
+                    valueRange = 0.5f..3.0f,
+                    steps = 9
+                )
+                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                Text(
+                    "최대 반복: ${speedMaxRechecks}회",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Slider(
+                    value = speedMaxRechecks.toFloat(),
+                    onValueChange = { speedMaxRechecks = it.toInt() },
+                    onValueChangeFinished = {
+                        viewModel.saveConfig { it.copy(speedMaxRechecks = speedMaxRechecks) }
+                    },
+                    valueRange = 1f..5f,
+                    steps = 3
                 )
             }
         }
@@ -236,6 +356,48 @@ fun SettingsScreen(contentPadding: PaddingValues) {
                     },
                     valueRange = 0f..5f,
                     steps = 4
+                )
+                // v0.4 (T-18) — 부팅 시 자동 시작
+                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("부팅 시 자동 시작", style = MaterialTheme.typography.bodyLarge)
+                    Switch(
+                        checked = bootAutoStart,
+                        onCheckedChange = { value ->
+                            bootAutoStart = value
+                            viewModel.saveConfig { it.copy(bootAutoStart = value) }
+                        }
+                    )
+                }
+                Text(
+                    "재부팅 후 스케줄을 자동으로 복원합니다. Shizuku는 직접 다시 시작해야 합니다.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                // v0.4 — 완료 시 소리 알림 (상시 1개 유지, 10초 후 자동 소멸)
+                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("완료 시 소리 알림", style = MaterialTheme.typography.bodyLarge)
+                    Switch(
+                        checked = eventAlertEnabled,
+                        onCheckedChange = { value ->
+                            eventAlertEnabled = value
+                            viewModel.saveConfig { it.copy(eventAlertEnabled = value) }
+                        }
+                    )
+                }
+                Text(
+                    "IP 변경 완료 때 소리가 1회 울립니다 (알림은 10초 후 자동 소멸, 상태 알림 1개 유지).",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }

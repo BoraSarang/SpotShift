@@ -42,6 +42,9 @@ class IpRotationService : Service() {
     private var countdownJob: Job? = null
     private var currentIp: String? = null
     private val started = AtomicBoolean(false)
+    // v0.4 — 완료 문구 보존용 (카운트다운이 "실행 중"으로 덮지 않도록)
+    private var lastSummary: String? = null
+    private var activeEngine: RotationEngine? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -109,6 +112,9 @@ class IpRotationService : Service() {
         scheduler.onRotationCompleted = ::onRotationCompleted
         scheduler.start()
         this.scheduler = scheduler
+        this.activeEngine = engine
+        // v0.4 — 과거 랜덤 ID 이벤트 알림 잔재 1회 정리 (이후 단일 ID로 갱신)
+        pruneStaleEventNotifications()
         currentIp = engine.state.currentIp
         updateNotification(buildStatusNotification("로테이션 실행 중", currentIp))
         // v0.2 — 시작 시 현재 IP를 조회해 상태 알림에 표시
@@ -126,7 +132,23 @@ class IpRotationService : Service() {
         stopCountdownUpdate()
         scheduler?.destroy()
         scheduler = null
+        activeEngine = null
+        lastSummary = null
         updateNotification(buildStatusNotification("SpotShift 대기 중"))
+    }
+
+    /**
+     * v0.4 — 과거 랜덤 ID 이벤트 알림 잔재를 1회 정리한다 (이후 단일 ID 갱신).
+     * 자신의 알림만 조회하므로 추가 권한 불필요.
+     */
+    private fun pruneStaleEventNotifications() {
+        runCatching {
+            val nm = getSystemService(NotificationManager::class.java) ?: return
+            nm.activeNotifications
+                .filter { it.notification.channelId == CHANNEL_EVENT }
+                .forEach { nm.cancel(it.tag, it.id) }
+            DebugLogger.feature("IpRotationService", "이벤트 알림 잔재 정리")
+        }
     }
 
     /**
@@ -137,10 +159,20 @@ class IpRotationService : Service() {
         countdownJob?.cancel()
         countdownJob = scope.launch {
             while (isActive) {
-                if (currentIp == null) {
+                // v0.4 — 회전 진행 중에는 phase 콜백 표시를 덮지 않음.
+                // 완료 후에는 마지막 문구 유지 + IP 재조회 (수동 변경분 반영).
+                val phase = activeEngine?.state?.phase
+                val settled = phase == null ||
+                    phase == com.borasarang.spotshift.data.RotationPhase.IDLE ||
+                    phase == com.borasarang.spotshift.data.RotationPhase.SUCCESS ||
+                    phase == com.borasarang.spotshift.data.RotationPhase.FAILED
+                if (settled) {
                     currentIp = runCatching { IpVerifier().fetchPublicIp() }.getOrNull()
+                        ?: currentIp
+                    updateNotification(
+                        buildStatusNotification(lastSummary ?: "로테이션 실행 중", currentIp)
+                    )
                 }
-                updateNotification(buildStatusNotification("로테이션 실행 중", currentIp))
                 delay(COUNTDOWN_UPDATE_MILLIS)
             }
         }
@@ -158,6 +190,7 @@ class IpRotationService : Service() {
             "IP 변경 실패 (${record.errorCode ?: "E-AND-NET-0002"})"
         }
         DebugLogger.i("[SRV] $summary")
+        lastSummary = summary
         updateNotification(buildStatusNotification(summary, record.newIp))
     }
 
@@ -178,7 +211,7 @@ class IpRotationService : Service() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
         return NotificationCompat.Builder(this, CHANNEL_STATUS)
-            .setSmallIcon(android.R.drawable.ic_menu_share)
+            .setSmallIcon(com.borasarang.spotshift.R.drawable.ic_notification)
             .setContentTitle("SpotShift")
             .setContentText(content)
             .setContentIntent(launchIntent)

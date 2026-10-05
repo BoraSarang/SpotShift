@@ -15,7 +15,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.BatteryStd
-import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.SignalCellularAlt
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -57,6 +56,8 @@ fun HomeScreen(contentPadding: PaddingValues) {
     var publicIp by remember { mutableStateOf<String?>(null) }
     // v0.4 (T-19) — 접속 상태 5초 폴링
     var signalText by remember { mutableStateOf<String?>(null) }
+    // 환경 체온계 (관문 아님): 실시간 배터리 + LTE 신호 표시용
+    var batteryPercent by remember { mutableStateOf<Int?>(null) }
     // v0.3 — 마지막 변경 시각은 Prefs(config)에서 구독 — 앱 재시작/자동 변경에도 유지
     val lastRotationAt = config.lastRotationAt
 
@@ -67,6 +68,12 @@ fun HomeScreen(contentPadding: PaddingValues) {
                 publicIp = com.borasarang.spotshift.core.IpVerifier().fetchPublicIp()
             }
             signalText = com.borasarang.spotshift.core.SignalMonitor(context).snapshot().display()
+            batteryPercent = runCatching {
+                val bm = context.getSystemService(android.os.BatteryManager::class.java)
+                    ?.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY)
+                    ?.takeIf { it >= 0 }
+                bm
+            }.getOrNull()
             delay(5_000)
         }
     }
@@ -238,17 +245,12 @@ fun HomeScreen(contentPadding: PaddingValues) {
         Spacer(Modifier.height(20.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             ConditionChip(
-                label = "배터리 ${config.minBatteryPercent}%",
+                label = batteryPercent?.let { "배터리 ${it}%" } ?: "배터리 -",
                 satisfied = true,
                 icon = Icons.Outlined.BatteryStd
             )
             ConditionChip(
-                label = config.scheduleWindowStart?.let { "시간대 ${it}시~${config.scheduleWindowEnd}시" } ?: "항상",
-                satisfied = true,
-                icon = Icons.Outlined.Schedule
-            )
-            ConditionChip(
-                label = "신호 ${config.minSignalDbm}dBm",
+                label = signalText ?: "신호 -",
                 satisfied = true,
                 icon = Icons.Outlined.SignalCellularAlt
             )

@@ -65,8 +65,6 @@ fun SettingsScreen(contentPadding: PaddingValues) {
 
     var intervalMinutes by remember { mutableStateOf(config.intervalMinutes) }
     var enabled by remember { mutableStateOf(config.enabled) }
-    var minBattery by remember { mutableStateOf(config.minBatteryPercent) }
-    var minSignal by remember { mutableStateOf(config.minSignalDbm) }
     var retryCount by remember { mutableStateOf(config.retryCount) }
     var fallbackEnabled by remember { mutableStateOf(config.fallbackEnabled) }
     var hotspotAutoEnable by remember { mutableStateOf(config.hotspotAutoEnable) }
@@ -175,50 +173,14 @@ fun SettingsScreen(contentPadding: PaddingValues) {
                     steps = ((MAX_INTERVAL_MINUTES - MIN_INTERVAL_MINUTES) / INTERVAL_STEP).toInt() - 1
                 )
                 Text(
-                    "IP가 변경된 지 주기가 지나지 않았으면 자동으로 변경하지 않습니다.",
+                    "주기가 되면 무조건 IP를 변경합니다 (배터리·신호와 무관).",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
 
-        SectionTitle("스마트 조건")
-        Surface(
-            shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.surface
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    "최소 배터리: ${minBattery}%",
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Slider(
-                    value = minBattery.toFloat(),
-                    onValueChange = { minBattery = it.toInt() },
-                    onValueChangeFinished = {
-                        viewModel.updateMinBattery(minBattery)
-                    },
-                    valueRange = 0f..100f,
-                    steps = 19
-                )
-                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-                Text(
-                    "최소 신호: ${minSignal}dBm",
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Slider(
-                    value = minSignal.toFloat(),
-                    onValueChange = { minSignal = it.toInt() },
-                    onValueChangeFinished = {
-                        viewModel.updateMinSignal(minSignal)
-                    },
-                    valueRange = -120f..-60f,
-                    steps = 11
-                )
-            }
-        }
-
-        // v0.4 (T-17) — 속도 기반 조건부 실행
+        // v0.4 — 속도 기반 조건부 실행
         SectionTitle("속도 검증")
         Surface(
             shape = RoundedCornerShape(16.dp),

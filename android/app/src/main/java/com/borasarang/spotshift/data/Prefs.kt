@@ -21,10 +21,6 @@ class Prefs(private val context: Context) {
         RotationConfig(
             enabled = prefs[KEY_ENABLED] ?: false,
             intervalMinutes = prefs[KEY_INTERVAL] ?: 120,
-            scheduleWindowStart = prefs[KEY_WINDOW_START],
-            scheduleWindowEnd = prefs[KEY_WINDOW_END],
-            minBatteryPercent = prefs[KEY_MIN_BATTERY] ?: 30,
-            minSignalDbm = prefs[KEY_MIN_SIGNAL] ?: -110,
             retryCount = prefs[KEY_RETRY] ?: 2,
             airplaneHoldSec = prefs[KEY_AIRPLANE_HOLD] ?: 5,
             fallbackEnabled = prefs[KEY_FALLBACK] ?: true,
@@ -48,12 +44,6 @@ class Prefs(private val context: Context) {
      */
     suspend fun updateEnabled(v: Boolean) = editKey { it[KEY_ENABLED] = v }
     suspend fun updateIntervalMinutes(v: Int) = editKey { it[KEY_INTERVAL] = v }
-    suspend fun updateWindow(startHour: Int?, endHour: Int?) = editKey {
-        if (startHour != null) it[KEY_WINDOW_START] = startHour else it.remove(KEY_WINDOW_START)
-        if (endHour != null) it[KEY_WINDOW_END] = endHour else it.remove(KEY_WINDOW_END)
-    }
-    suspend fun updateMinBattery(v: Int) = editKey { it[KEY_MIN_BATTERY] = v }
-    suspend fun updateMinSignal(v: Int) = editKey { it[KEY_MIN_SIGNAL] = v }
     suspend fun updateRetryCount(v: Int) = editKey { it[KEY_RETRY] = v }
     suspend fun updateAirplaneHoldSec(v: Int) = editKey { it[KEY_AIRPLANE_HOLD] = v }
     suspend fun updateFallback(v: Boolean) = editKey { it[KEY_FALLBACK] = v }
@@ -76,7 +66,7 @@ class Prefs(private val context: Context) {
     }
 
     /**
-     * 마지막 IP 변경 시각 (자동 스케줄러의 주기 내 스킵 판단용).
+     * 마지막 IP 변경 시각 (상태 알림·홈 카운트다운의 다음 변경 예상 시각 계산용).
      */
     suspend fun getLastRotationAt(): Long =
         context.dataStore.data.first()[KEY_LAST_ROTATION_AT] ?: 0L
@@ -127,10 +117,6 @@ class Prefs(private val context: Context) {
     companion object {
         private val KEY_ENABLED = booleanPreferencesKey("enabled")
         private val KEY_INTERVAL = intPreferencesKey("interval_minutes")
-        private val KEY_WINDOW_START = intPreferencesKey("window_start_hour")
-        private val KEY_WINDOW_END = intPreferencesKey("window_end_hour")
-        private val KEY_MIN_BATTERY = intPreferencesKey("min_battery_percent")
-        private val KEY_MIN_SIGNAL = intPreferencesKey("min_signal_dbm")
         private val KEY_RETRY = intPreferencesKey("retry_count")
         private val KEY_AIRPLANE_HOLD = intPreferencesKey("airplane_hold_sec")
         private val KEY_FALLBACK = booleanPreferencesKey("fallback_enabled")

@@ -138,8 +138,6 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
 
     // 키별 저장 중계 (통째 덮어쓰기 금지 — Prefs 참조)
     fun updateIntervalMinutes(v: Int) = launchUpdate { prefs.updateIntervalMinutes(v) }
-    fun updateMinBattery(v: Int) = launchUpdate { prefs.updateMinBattery(v) }
-    fun updateMinSignal(v: Int) = launchUpdate { prefs.updateMinSignal(v) }
     fun updateRetryCount(v: Int) = launchUpdate { prefs.updateRetryCount(v) }
     fun updateFallback(v: Boolean) = launchUpdate { prefs.updateFallback(v) }
     fun updateHotspotAuto(v: Boolean) = launchUpdate { prefs.updateHotspotAuto(v) }

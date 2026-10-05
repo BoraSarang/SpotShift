@@ -2,7 +2,6 @@ package com.borasarang.spotshift.scheduler
 
 import android.content.Context
 import com.borasarang.spotshift.DebugLogger
-import com.borasarang.spotshift.core.IpVerifier
 import com.borasarang.spotshift.core.RotationEngine
 import com.borasarang.spotshift.core.SpeedChecker
 import com.borasarang.spotshift.data.Prefs
@@ -18,9 +17,9 @@ import kotlinx.coroutines.launch
 /**
  * 주기 기반 IP 로테이션 스케줄러.
  * 시작 시 1회 대기 후, 설정 주기마다:
- * 1) 셀룰러 모드 확인 (v0.2)
- * 2) 주기 내 IP 변경 여부 확인 — 마지막 변경 후 주기 미경과 시 스킵 (v0.2)
- * 3) 조건 평가 → RotationEngine 실행
+ * 1) 셀룰러 모드 확인 (유일한 관문 — Wi-Fi 연결 시 스킵 + 기록)
+ * 2) 무조건 RotationEngine 실행 → 변경 후 속도 검증
+ * 배터리·LTE 신호는 실행을 막지 않고 기록에만 남는다 (체온계).
  */
 class RotationScheduler(
     private val context: Context,
@@ -45,13 +44,21 @@ class RotationScheduler(
             while (isActive) {
                 val config = prefs.getConfig()
                 if (config.enabled) {
-                    // 무조건 변경 (T-10 주기 내 스킵 폐지): 주기가 되면 IP가 바뀌었든 말든 실행.
-                    // 수동/이동으로 IP가 바뀌어도 스케줄은 그대로 돈다.
+                    // 무조건 변경: 주기가 되면 IP가 바뀌었든 말든 실행한다.
+                    // 유일한 관문은 셀룰러 모드. 스킵해도 로그 + 기록에 남긴다.
                     val result = conditions.evaluate(config)
                     if (result.passed) {
                         runSpeedGatedRotation(config)
                     } else {
                         DebugLogger.i("[SCH] 조건 미충족으로 스킵: ${result.skippedReason}")
+                        prefs.addRecord(
+                            com.borasarang.spotshift.data.RotationRecord(
+                                changed = false,
+                                method = com.borasarang.spotshift.data.RotationRecord.METHOD_NONE,
+                                note = "스킵: ${result.skippedReason}",
+                                errorCode = "E-AND-SCH-0001"
+                            )
+                        )
                     }
                 } else {
                     DebugLogger.d("[SCH] 스케줄 비활성 — 대기")
@@ -59,30 +66,6 @@ class RotationScheduler(
                 delay(intervalMillis(config.intervalMinutes))
             }
         }
-    }
-
-    /**
-     * v0.2 요구사항 2 (T-10) — 폐지됨.
-     * 무조건 변경 원칙으로 전환되어 더 이상 호출되지 않음. 삭제 예정, 남겨둔 이유는
-     * 히스토리 참조용. 호출부 없음.
-     */
-    private suspend fun shouldSkipByRotation(config: com.borasarang.spotshift.data.RotationConfig): Boolean {
-        val lastAt = prefs.getLastRotationAt()
-        if (lastAt <= 0L) return false
-        val elapsedMs = System.currentTimeMillis() - lastAt
-        if (elapsedMs < intervalMillis(config.intervalMinutes)) {
-            val currentIp = IpVerifier().fetchPublicIp()
-            val lastIp = config.lastKnownIp
-            if (lastIp != null && currentIp != null && currentIp != lastIp) {
-                // 이동으로 IP가 이미 변경됨 → 변경 불필요, 메타만 갱신
-                prefs.updateRotationMeta(System.currentTimeMillis(), currentIp)
-                DebugLogger.i("[SCH] 주기 내 이동 IP 변경 감지: $lastIp → $currentIp")
-                return true
-            }
-            DebugLogger.d("[SCH] 주기 내 IP 유지: $currentIp (변경 불필요)")
-            return true
-        }
-        return false
     }
 
     fun stop() {
@@ -98,6 +81,8 @@ class RotationScheduler(
     private suspend fun runSpeedGatedRotation(config: com.borasarang.spotshift.data.RotationConfig) {
         val maxAttempts = config.speedMaxRechecks.coerceAtLeast(1)
         val threshold = config.speedThresholdMbps
+        // 체온계: 실행 전 환경 (배터리·LTE 신호) — 막지 않고 기록에만 남긴다.
+        val env = conditions.snapshot().label()?.let { " ($it)" } ?: ""
         var attempt = 0
         while (attempt < maxAttempts) {
             attempt++
@@ -108,7 +93,7 @@ class RotationScheduler(
                     com.borasarang.spotshift.data.RotationRecord(
                         changed = false,
                         method = com.borasarang.spotshift.data.RotationRecord.METHOD_SPEED_CHECK,
-                        note = "측정 실패 — 검증 없이 종료(E-AND-NET-0004)"
+                        note = "측정 실패 — 검증 없이 종료(E-AND-NET-0004)$env"
                     )
                 )
                 DebugLogger.e("[SCH] 속도 측정 실패 — 검증 없이 종료", "E-AND-NET-0004")
@@ -122,7 +107,7 @@ class RotationScheduler(
                     com.borasarang.spotshift.data.RotationRecord(
                         changed = false,
                         method = com.borasarang.spotshift.data.RotationRecord.METHOD_SPEED_CHECK,
-                        note = "측정 ${label}Mbps ≥ 기준 ${threshold}Mbps — 달성"
+                        note = "측정 ${label}Mbps ≥ 기준 ${threshold}Mbps — 달성$env"
                     )
                 )
                 DebugLogger.i("[SCH] 속도 달성(${label}Mbps ≥ ${threshold}Mbps) — 종료")
@@ -132,7 +117,7 @@ class RotationScheduler(
                 com.borasarang.spotshift.data.RotationRecord(
                     changed = false,
                     method = com.borasarang.spotshift.data.RotationRecord.METHOD_SPEED_CHECK,
-                    note = "측정 ${label}Mbps < 기준 ${threshold}Mbps — 재변경 ${attempt}/${maxAttempts}"
+                    note = "측정 ${label}Mbps < 기준 ${threshold}Mbps — 재변경 ${attempt}/${maxAttempts}$env"
                 )
             )
             if (attempt >= maxAttempts) {

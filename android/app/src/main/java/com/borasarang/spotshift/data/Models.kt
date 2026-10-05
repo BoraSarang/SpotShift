@@ -26,10 +26,6 @@ data class RotationRecord(
 data class RotationConfig(
     val enabled: Boolean = false,
     val intervalMinutes: Int = 120,
-    val scheduleWindowStart: Int? = null,
-    val scheduleWindowEnd: Int? = null,
-    val minBatteryPercent: Int = 30,
-    val minSignalDbm: Int = -110,
     val retryCount: Int = 2,
     val airplaneHoldSec: Int = 5,
     val fallbackEnabled: Boolean = true,

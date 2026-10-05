@@ -70,8 +70,7 @@ fun SettingsScreen(contentPadding: PaddingValues) {
     var retryCount by remember { mutableStateOf(config.retryCount) }
     var fallbackEnabled by remember { mutableStateOf(config.fallbackEnabled) }
     var hotspotAutoEnable by remember { mutableStateOf(config.hotspotAutoEnable) }
-    // v0.4 (T-17/T-18)
-    var speedCheckEnabled by remember { mutableStateOf(config.speedCheckEnabled) }
+    // v0.4 — 변경 후 속도 검증용 (건너뛰기 없음)
     var speedThreshold by remember { mutableStateOf(config.speedThresholdMbps) }
     var speedMaxRechecks by remember { mutableStateOf(config.speedMaxRechecks) }
     var bootAutoStart by remember { mutableStateOf(config.bootAutoStart) }
@@ -169,7 +168,7 @@ fun SettingsScreen(contentPadding: PaddingValues) {
                     value = intervalMinutes.toFloat(),
                     onValueChange = { intervalMinutes = it.toInt() },
                     onValueChangeFinished = {
-                        viewModel.saveConfig { it.copy(intervalMinutes = intervalMinutes) }
+                        viewModel.updateIntervalMinutes(intervalMinutes)
                     },
                     // v0.2 — 요구사항 1: 30분~720분(12시간), 30분 단위
                     valueRange = MIN_INTERVAL_MINUTES.toFloat()..MAX_INTERVAL_MINUTES.toFloat(),
@@ -197,7 +196,7 @@ fun SettingsScreen(contentPadding: PaddingValues) {
                     value = minBattery.toFloat(),
                     onValueChange = { minBattery = it.toInt() },
                     onValueChangeFinished = {
-                        viewModel.saveConfig { it.copy(minBatteryPercent = minBattery) }
+                        viewModel.updateMinBattery(minBattery)
                     },
                     valueRange = 0f..100f,
                     steps = 19
@@ -211,7 +210,7 @@ fun SettingsScreen(contentPadding: PaddingValues) {
                     value = minSignal.toFloat(),
                     onValueChange = { minSignal = it.toInt() },
                     onValueChangeFinished = {
-                        viewModel.saveConfig { it.copy(minSignalDbm = minSignal) }
+                        viewModel.updateMinSignal(minSignal)
                     },
                     valueRange = -120f..-60f,
                     steps = 11
@@ -220,44 +219,31 @@ fun SettingsScreen(contentPadding: PaddingValues) {
         }
 
         // v0.4 (T-17) — 속도 기반 조건부 실행
-        SectionTitle("속도 조건")
+        SectionTitle("속도 검증")
         Surface(
             shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.surface
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("저속일 때만 변경", style = MaterialTheme.typography.bodyLarge)
-                    Switch(
-                        checked = speedCheckEnabled,
-                        onCheckedChange = { value ->
-                            speedCheckEnabled = value
-                            viewModel.saveConfig { it.copy(speedCheckEnabled = value) }
-                        }
-                    )
-                }
+                Text("변경 후 속도 검증", style = MaterialTheme.typography.bodyLarge)
                 Text(
-                    "주기마다 속도를 측정해 기준 미만일 때만 IP를 변경합니다. (측정 1회 약 1MB)",
+                    "IP 변경 후 속도를 측정해 기준 미만이면 다시 변경합니다. (측정 1회 약 1MB)",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
                 Text(
-                    "속도 기준: ${"%.1f".format(speedThreshold)}Mbps",
+                    "속도 기준: ${"%.0f".format(speedThreshold)}Mbps",
                     style = MaterialTheme.typography.bodyLarge
                 )
                 Slider(
                     value = speedThreshold,
                     onValueChange = { speedThreshold = it },
                     onValueChangeFinished = {
-                        viewModel.saveConfig { it.copy(speedThresholdMbps = speedThreshold) }
+                        viewModel.updateSpeedThreshold(speedThreshold)
                     },
-                    valueRange = 0.5f..3.0f,
-                    steps = 9
+                    valueRange = 1f..50f,
+                    steps = 48
                 )
                 HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
                 Text(
@@ -268,7 +254,7 @@ fun SettingsScreen(contentPadding: PaddingValues) {
                     value = speedMaxRechecks.toFloat(),
                     onValueChange = { speedMaxRechecks = it.toInt() },
                     onValueChangeFinished = {
-                        viewModel.saveConfig { it.copy(speedMaxRechecks = speedMaxRechecks) }
+                        viewModel.updateSpeedRechecks(speedMaxRechecks)
                     },
                     valueRange = 1f..5f,
                     steps = 3
@@ -314,7 +300,7 @@ fun SettingsScreen(contentPadding: PaddingValues) {
                         checked = hotspotAutoEnable,
                         onCheckedChange = { value ->
                             hotspotAutoEnable = value
-                            viewModel.saveConfig { it.copy(hotspotAutoEnable = value) }
+                            viewModel.updateHotspotAuto(value)
                         }
                     )
                 }
@@ -334,7 +320,7 @@ fun SettingsScreen(contentPadding: PaddingValues) {
                         checked = fallbackEnabled,
                         onCheckedChange = { value ->
                             fallbackEnabled = value
-                            viewModel.saveConfig { it.copy(fallbackEnabled = value) }
+                            viewModel.updateFallback(value)
                         }
                     )
                 }
@@ -352,7 +338,7 @@ fun SettingsScreen(contentPadding: PaddingValues) {
                     value = retryCount.toFloat(),
                     onValueChange = { retryCount = it.toInt() },
                     onValueChangeFinished = {
-                        viewModel.saveConfig { it.copy(retryCount = retryCount) }
+                        viewModel.updateRetryCount(retryCount)
                     },
                     valueRange = 0f..5f,
                     steps = 4
@@ -369,7 +355,7 @@ fun SettingsScreen(contentPadding: PaddingValues) {
                         checked = bootAutoStart,
                         onCheckedChange = { value ->
                             bootAutoStart = value
-                            viewModel.saveConfig { it.copy(bootAutoStart = value) }
+                            viewModel.updateBootAuto(value)
                         }
                     )
                 }
@@ -390,7 +376,7 @@ fun SettingsScreen(contentPadding: PaddingValues) {
                         checked = eventAlertEnabled,
                         onCheckedChange = { value ->
                             eventAlertEnabled = value
-                            viewModel.saveConfig { it.copy(eventAlertEnabled = value) }
+                            viewModel.updateEventAlert(value)
                         }
                     )
                 }

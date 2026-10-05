@@ -243,19 +243,22 @@ class IpRotationService : Service() {
 
     private fun createChannels() {
         val nm = getSystemService(NotificationManager::class.java)
-        // v0.3 — 기존 채널은 속성이 업데이트되지 않으므로 삭제 후 재생성 (배지 OFF 적용)
-        nm.deleteNotificationChannel(CHANNEL_STATUS)
-        nm.createNotificationChannel(
-            NotificationChannel(
-                CHANNEL_STATUS,
-                "SpotShift 실행 상태",
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                description = "IP 로테이션 진행 상태를 표시합니다."
-                // v0.3 — 동작 상태 알림은 배지 카운트에서 제외 (아이콘 배지 "1" 방지)
-                setShowBadge(false)
-            }
-        )
+        // 채널 삭제 금지: 포그라운드 서비스 실행 중 deleteNotificationChannel 호출 시
+        // SecurityException(Not allowed to delete channel with a foreground service)으로
+        // 서비스 onCreate 크래시 반복 발생. 기존 채널이 없으면 생성만 한다.
+        if (nm.getNotificationChannel(CHANNEL_STATUS) == null) {
+            nm.createNotificationChannel(
+                NotificationChannel(
+                    CHANNEL_STATUS,
+                    "SpotShift 실행 상태",
+                    NotificationManager.IMPORTANCE_LOW
+                ).apply {
+                    description = "IP 로테이션 진행 상태를 표시합니다."
+                    // v0.3 — 동작 상태 알림은 배지 카운트에서 제외 (아이콘 배지 "1" 방지)
+                    setShowBadge(false)
+                }
+            )
+        }
         nm.createNotificationChannel(
             NotificationChannel(
                 CHANNEL_EVENT,

@@ -36,9 +36,8 @@ data class RotationConfig(
     val hotspotAutoEnable: Boolean = true,
     val lastRotationAt: Long = 0L,
     val lastKnownIp: String? = null,
-    // v0.4 (T-17) — 속도 기반 조건부 실행
-    val speedCheckEnabled: Boolean = true,
-    val speedThresholdMbps: Float = 1.0f,
+    // v0.4 — 변경 후 속도 검증 (기준 미달이면 재변경, 최대 N회)
+    val speedThresholdMbps: Float = 2.0f,
     val speedMaxRechecks: Int = 3,
     // v0.4 (T-18) — 부팅 시 자동 시작
     val bootAutoStart: Boolean = true,

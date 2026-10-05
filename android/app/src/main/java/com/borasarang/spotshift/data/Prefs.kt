@@ -31,9 +31,8 @@ class Prefs(private val context: Context) {
             hotspotAutoEnable = prefs[KEY_HOTSPOT_AUTO] ?: true,
             lastRotationAt = prefs[KEY_LAST_ROTATION_AT] ?: 0L,
             lastKnownIp = prefs[KEY_LAST_KNOWN_IP],
-            // v0.4 (T-17/T-18)
-            speedCheckEnabled = prefs[KEY_SPEED_CHECK] ?: true,
-            speedThresholdMbps = prefs[KEY_SPEED_THRESHOLD] ?: 1.0f,
+            // v0.4 — 변경 후 속도 검증 (건너뛰기 없음, 무조건 변경)
+            speedThresholdMbps = prefs[KEY_SPEED_THRESHOLD] ?: 2.0f,
             speedMaxRechecks = prefs[KEY_SPEED_RECHECKS] ?: 3,
             bootAutoStart = prefs[KEY_BOOT_AUTO] ?: true,
             eventAlertEnabled = prefs[KEY_EVENT_ALERT] ?: true
@@ -42,30 +41,31 @@ class Prefs(private val context: Context) {
 
     suspend fun getConfig(): RotationConfig = configFlow.first()
 
-    suspend fun saveConfig(config: RotationConfig) {
-        context.dataStore.edit { prefs ->
-            prefs[KEY_ENABLED] = config.enabled
-            prefs[KEY_INTERVAL] = config.intervalMinutes
-            if (config.scheduleWindowStart != null) prefs[KEY_WINDOW_START] = config.scheduleWindowStart
-            else prefs.remove(KEY_WINDOW_START)
-            if (config.scheduleWindowEnd != null) prefs[KEY_WINDOW_END] = config.scheduleWindowEnd
-            else prefs.remove(KEY_WINDOW_END)
-            prefs[KEY_MIN_BATTERY] = config.minBatteryPercent
-            prefs[KEY_MIN_SIGNAL] = config.minSignalDbm
-            prefs[KEY_RETRY] = config.retryCount
-            prefs[KEY_AIRPLANE_HOLD] = config.airplaneHoldSec
-            prefs[KEY_FALLBACK] = config.fallbackEnabled
-            prefs[KEY_HOTSPOT_AUTO] = config.hotspotAutoEnable
-            prefs[KEY_LAST_ROTATION_AT] = config.lastRotationAt
-            prefs[KEY_SPEED_CHECK] = config.speedCheckEnabled
-            prefs[KEY_SPEED_THRESHOLD] = config.speedThresholdMbps
-            prefs[KEY_SPEED_RECHECKS] = config.speedMaxRechecks
-            prefs[KEY_BOOT_AUTO] = config.bootAutoStart
-            prefs[KEY_EVENT_ALERT] = config.eventAlertEnabled
-            if (config.lastKnownIp != null) prefs[KEY_LAST_KNOWN_IP] = config.lastKnownIp
-            else prefs.remove(KEY_LAST_KNOWN_IP)
-        }
-        DebugLogger.feature("Prefs", "saveConfig 저장됨")
+    /**
+     * 키별 저장: 통째 덮어쓰기 금지.
+     * 전체 객체를 읽어-수정-쓰기하면 오래된 스냅샷이 다른 키를 몰래 되돌릴 수 있어
+     * (알림 OFF 표시인데 저장값 ON으로 뒤집힌 사고의 원인). 각 키는 자기 키만 건드린다.
+     */
+    suspend fun updateEnabled(v: Boolean) = editKey { it[KEY_ENABLED] = v }
+    suspend fun updateIntervalMinutes(v: Int) = editKey { it[KEY_INTERVAL] = v }
+    suspend fun updateWindow(startHour: Int?, endHour: Int?) = editKey {
+        if (startHour != null) it[KEY_WINDOW_START] = startHour else it.remove(KEY_WINDOW_START)
+        if (endHour != null) it[KEY_WINDOW_END] = endHour else it.remove(KEY_WINDOW_END)
+    }
+    suspend fun updateMinBattery(v: Int) = editKey { it[KEY_MIN_BATTERY] = v }
+    suspend fun updateMinSignal(v: Int) = editKey { it[KEY_MIN_SIGNAL] = v }
+    suspend fun updateRetryCount(v: Int) = editKey { it[KEY_RETRY] = v }
+    suspend fun updateAirplaneHoldSec(v: Int) = editKey { it[KEY_AIRPLANE_HOLD] = v }
+    suspend fun updateFallback(v: Boolean) = editKey { it[KEY_FALLBACK] = v }
+    suspend fun updateHotspotAuto(v: Boolean) = editKey { it[KEY_HOTSPOT_AUTO] = v }
+    suspend fun updateSpeedThreshold(v: Float) = editKey { it[KEY_SPEED_THRESHOLD] = v }
+    suspend fun updateSpeedRechecks(v: Int) = editKey { it[KEY_SPEED_RECHECKS] = v }
+    suspend fun updateBootAuto(v: Boolean) = editKey { it[KEY_BOOT_AUTO] = v }
+    suspend fun updateEventAlert(v: Boolean) = editKey { it[KEY_EVENT_ALERT] = v }
+
+    private suspend fun editKey(block: (androidx.datastore.preferences.core.MutablePreferences) -> Unit) {
+        context.dataStore.edit(block)
+        DebugLogger.feature("Prefs", "키 저장됨")
     }
 
     suspend fun updateRotationMeta(lastRotationAt: Long, lastKnownIp: String) {
@@ -138,10 +138,9 @@ class Prefs(private val context: Context) {
         private val KEY_LAST_ROTATION_AT = longPreferencesKey("last_rotation_at")
         private val KEY_LAST_KNOWN_IP = stringPreferencesKey("last_known_ip")
         private val KEY_RECORDS = stringPreferencesKey("records_json")
-        // v0.4 — 최근 측정 속도
+        // v0.4 — 변경 후 속도 검증용 (최근 측정 표시)
         private val KEY_LAST_SPEED = floatPreferencesKey("last_speed_mbps")
-        // v0.4 (T-17/T-18)
-        private val KEY_SPEED_CHECK = booleanPreferencesKey("speed_check_enabled")
+        // v0.4 — 변경 후 검증 기준/최대 반복
         private val KEY_SPEED_THRESHOLD = floatPreferencesKey("speed_threshold_mbps")
         private val KEY_SPEED_RECHECKS = intPreferencesKey("speed_max_rechecks")
         private val KEY_BOOT_AUTO = booleanPreferencesKey("boot_auto_start")

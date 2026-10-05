@@ -33,8 +33,9 @@ class SpotShiftTileService : TileService() {
         scope.launch {
             val prefs = Prefs(applicationContext)
             val config = prefs.getConfig()
-            val newEnabled = !isRotationActive()
-            prefs.saveConfig(config.copy(enabled = newEnabled))
+            val newEnabled = !config.enabled
+            // 키별 저장: enabled 키만 건드림 (다른 키 덮어쓰기 불가)
+            prefs.updateEnabled(newEnabled)
 
             val intent = Intent(applicationContext, IpRotationService::class.java)
             intent.action = if (newEnabled) IpRotationService.ACTION_START else IpRotationService.ACTION_STOP

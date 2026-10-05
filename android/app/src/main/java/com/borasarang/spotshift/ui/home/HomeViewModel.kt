@@ -123,8 +123,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setEnabled(enabled: Boolean) {
         viewModelScope.launch {
-            val current = config.value
-            prefs.saveConfig(current.copy(enabled = enabled))
+            prefs.updateEnabled(enabled)
             // v0.2 — 요구사항 5: 자동 IP 변경 토글이 서비스(스케줄러) 라이프사이클을 제어
             val intent = Intent(getApplication(), IpRotationService::class.java)
             if (enabled) {
@@ -137,10 +136,20 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun saveConfig(transform: (RotationConfig) -> RotationConfig) {
-        viewModelScope.launch {
-            prefs.saveConfig(transform(config.value))
-        }
+    // 키별 저장 중계 (통째 덮어쓰기 금지 — Prefs 참조)
+    fun updateIntervalMinutes(v: Int) = launchUpdate { prefs.updateIntervalMinutes(v) }
+    fun updateMinBattery(v: Int) = launchUpdate { prefs.updateMinBattery(v) }
+    fun updateMinSignal(v: Int) = launchUpdate { prefs.updateMinSignal(v) }
+    fun updateRetryCount(v: Int) = launchUpdate { prefs.updateRetryCount(v) }
+    fun updateFallback(v: Boolean) = launchUpdate { prefs.updateFallback(v) }
+    fun updateHotspotAuto(v: Boolean) = launchUpdate { prefs.updateHotspotAuto(v) }
+    fun updateSpeedThreshold(v: Float) = launchUpdate { prefs.updateSpeedThreshold(v) }
+    fun updateSpeedRechecks(v: Int) = launchUpdate { prefs.updateSpeedRechecks(v) }
+    fun updateBootAuto(v: Boolean) = launchUpdate { prefs.updateBootAuto(v) }
+    fun updateEventAlert(v: Boolean) = launchUpdate { prefs.updateEventAlert(v) }
+
+    private fun launchUpdate(block: suspend () -> Unit) {
+        viewModelScope.launch { block() }
     }
 
     fun manualRotate(onResult: (RotationRecord) -> Unit = {}) {
@@ -149,29 +158,57 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                 DebugLogger.e("Shizuku 미준비 — 수동 실행 불가", "E-AND-PERM-0002")
                 return@launch
             }
-            val base = engine.rotate(config.value)
-            // v0.4 — 수동 변경 후에도 속도 측정·표시 (자동 경로와 동일 정보)
-            // 측정 1회 = 기록 1건 (측정 기록 먼저 → 변경 기록이 최신으로 표시)
-            val speed = speedChecker.measure()
-            val speedNote = if (speed.success && speed.mbps != null) {
-                prefs.updateLastSpeed(speed.mbps.toFloat())
-                val label = "%.2f".format(speed.mbps)
-                prefs.addRecord(
-                    RotationRecord(
-                        changed = false,
-                        method = RotationRecord.METHOD_SPEED_CHECK,
-                        note = "측정 ${label}Mbps"
+            // config.value 금지: 콜드스타트 직후에는 DataStore 첫 방출 전이라
+            // 초기값(알림=true)이 들어있어 꺼져 있는데도 울린다. 반드시 fresh read.
+            val cfg = prefs.getConfig()
+            // 변경 후 검증: 기준 미달이면 재변경, 달성/최대 반복 시 종료 (건너뛰기 없음)
+            val threshold = cfg.speedThresholdMbps
+            val maxAttempts = cfg.speedMaxRechecks.coerceAtLeast(1)
+            var attempt = 0
+            var lastRecord: RotationRecord? = null
+            while (attempt < maxAttempts) {
+                attempt++
+                val base = engine.rotate(cfg)
+                val speed = speedChecker.measure()
+                val speedNote = if (speed.success && speed.mbps != null) {
+                    prefs.updateLastSpeed(speed.mbps.toFloat())
+                    val label = "%.2f".format(speed.mbps)
+                    prefs.addRecord(
+                        RotationRecord(
+                            changed = false,
+                            method = RotationRecord.METHOD_SPEED_CHECK,
+                            note = "측정 ${label}Mbps"
+                        )
                     )
-                )
-                "측정 ${label}Mbps"
-            } else null
-            val record = if (speedNote != null) base.copy(note = speedNote) else base
-            prefs.addRecord(record)
-            if (record.changed && record.newIp != null) {
-                prefs.updateRotationMeta(System.currentTimeMillis(), record.newIp)
+                    if (speed.mbps >= threshold) {
+                        lastRecord = finishManual(base, "측정 ${label}Mbps ≥ 기준 ${threshold}Mbps — 달성")
+                        break
+                    }
+                    if (attempt >= maxAttempts) {
+                        lastRecord = finishManual(base, "측정 ${label}Mbps < 기준 ${threshold}Mbps — 포기")
+                        break
+                    }
+                    // 재변경 전 중간 기록 (최종 기록은 루프 종료 시 최신으로 표시)
+                    prefs.addRecord(base.copy(note = "측정 ${label}Mbps < 기준 ${threshold}Mbps — 재변경 ${attempt}/${maxAttempts}"))
+                    if (base.changed && base.newIp != null) {
+                        prefs.updateRotationMeta(System.currentTimeMillis(), base.newIp)
+                    }
+                    continue
+                } else null
+                lastRecord = finishManual(base, speedNote)
+                break
             }
-            onResult(record)
+            lastRecord?.let(onResult)
         }
+    }
+
+    private suspend fun finishManual(base: RotationRecord, note: String?): RotationRecord {
+        val record = if (note != null) base.copy(note = note) else base
+        prefs.addRecord(record)
+        if (record.changed && record.newIp != null) {
+            prefs.updateRotationMeta(System.currentTimeMillis(), record.newIp)
+        }
+        return record
     }
 
     /**

@@ -2,6 +2,13 @@
 
 > 형식: `[android] 버전 — 날짜 — 요약 (에러코드/성능 기록)`
 
+## v0.4.1 — 2026-10-05 — 무조건 변경 확정 + 스케줄 스킵 폐지 + 무음 버그 수정 [android] (미릴리즈)
+
+- **의미 변경**: 속도 기준은 변경 전 건너뛰기가 아니라 변경 후 검증. 주기가 되면 무조건 변경 → 측정 → 기준(1~50Mbps, 기본 2) 미달이면 재변경 최대 3회. T-10 주기 내 스킵 폐지 (shouldSkipByRotation 호출 제거)
+- **수정**: IpRotationService 채널 삭제 크래시 (SecurityException) — deleteNotificationChannel 제거·없을 때만 생성. Prefs 통째 saveConfig 폐지 → 키별 update* 13종. 수동/원격 경로 콜드스타트 fresh read (config.value 초기값 알림=true 오발송 수정) + RotationEngine 진입 [CFG] 로그
+- **스크립트**: spotshift_rotate.sh 기본=요청만, --wait/-w/--verbose/-v 대기, No route to host 시 kill-server/start-server 자동복구
+- 빌드: `./gradlew assembleDebug` 성공, S22 설치+실행. 검증 대기: 다음 주기 자동 변경 실동작 + 무음 재확인
+
 ## v0.4.0 — 2026-10-04 — 속도 조건 + 부팅 복원 [android] (구현 완료·실검증 대기)
 
 - **신규 T-17**: `SpeedChecker`(1MB 다운로드 Mbps 환산, INTERNET 권한만) + 스케줄러 속도 게이트 (저속만 로테이션→30초 후 재측정 최대 3회, 정상은 스킵+기록, 측정 실패는 페일오픈) — E-AND-NET-0004

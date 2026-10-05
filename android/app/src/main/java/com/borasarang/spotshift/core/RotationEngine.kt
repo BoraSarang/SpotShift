@@ -56,6 +56,8 @@ class RotationEngine(
     suspend fun rotate(config: RotationConfig): RotationRecord = mutex.withLock {
         onRotationStarted?.invoke()
         eventAlert = config.eventAlertEnabled
+        // 진단용: 엔진이 실제로 본 설정값 (알림 몰래켜짐 추적용)
+        DebugLogger.i("[CFG] 기준=${config.speedThresholdMbps}Mbps 알림=${config.eventAlertEnabled} 최대반복=${config.speedMaxRechecks}")
         // v0.4 — 시작 알림은 상태 알림이 phase로 표시하므로 별도 발행 없음 (단일 알림)
         val record = rotateInternal(config)
         // v0.2 — 요구사항 5: 핫스팟 자동 켜기 옵션 확인 (회전 성공/실패 무관)

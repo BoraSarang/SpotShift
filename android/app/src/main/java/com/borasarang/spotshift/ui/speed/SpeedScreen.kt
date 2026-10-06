@@ -260,7 +260,7 @@ fun SpeedScreen(contentPadding: PaddingValues) {
                                 style = MaterialTheme.typography.bodyMedium
                             )
                             Text(
-                                "↑ ${r.uploadMbps?.let { "%.1f".format(it) } ?: "-"} Mbps" +
+                                "↑ ${r.uploadMbps?.let { "%.1f".format(it) } ?: "미측정"} Mbps" +
                                     (r.uploadMbps?.let { " (${formatRate(it.toDouble())})" } ?: "") +
                                     (r.latencyMs?.let { " · ${it}ms" } ?: "") +
                                     " · ${"%.1f".format(r.bytesUsed / 1024.0 / 1024.0)}MB",

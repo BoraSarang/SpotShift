@@ -18,8 +18,5 @@ android/local.properties
 *.jks
 *.keystore
 .env
-
-# 스크린샷 (로컬 산출물 — 커밋 제외)
-docs/screenshots/
 # 에이전트 세션 로그 — 로컬 전용 (커밋 금지)
 .agent/

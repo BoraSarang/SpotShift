@@ -2,7 +2,7 @@
 
 > 형식: `[android] 버전 — 날짜 — 요약 (에러코드/성능 기록)`
 
-## v0.5 — 2026-10-06 — 스케줄러 WorkManager 이관 [android] (미릴리즈)
+## v0.5.0 — 2026-10-06 — 스케줄러 WorkManager 이관 + 속도 탭 [android] (릴리즈)
 
 - **근본 수정 (T-26)**: 백그라운드 FGS 시작 크래시 6회 (`ForegroundServiceStartNotAllowedException`, dataSync 시간 제한) — `IpRotationService` 삭제, `RotationWorker`+`RotationSchedule`로 이관. 주기=Periodic, 실행=expedited 1회, 실행 중에만 `setForeground` 승격. 등록 지점: 앱 시작·부팅·토글ON·주기변경. 주기 하한 15분 (`coerceAtLeast`)
 - **FGS 타입 크래시 추가 해결**: WorkManager 2.9.0 `SystemForegroundService`에 타입 선언 없음 → API 34+ `InvalidForegroundServiceTypeException`. manifest에 `dataSync` 주입 + `ForegroundInfo` 3-arg 명시

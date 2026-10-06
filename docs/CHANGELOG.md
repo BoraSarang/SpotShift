@@ -2,6 +2,12 @@
 
 > 형식: `[android] 버전 — 날짜 — 요약 (에러코드/성능 기록)`
 
+## v0.5.1 — 2026-10-06 — 속도 탭 업로드 실패 수정 [android] (미릴리즈)
+
+- **수정 (T-29)**: 저속 업링크(약 1.1Mbps, KT LTE 실측)에서 속도 측정 → 업로드가 30초 안에 4MB 전량 전송+서버 200 확답을 못 받아 `E-AND-NET-0004` 실패로 끝나던 문제. `SpeedTester.upload` 성공 조건을 `전송>0 또는 서버확답` → `전송>0`으로 완화, 확답 없으면 전송 바이트/벽시계 추정값으로 성공 처리 (로그에 확정/추정 구분). 전송 0B일 때만 실패 유지
+- 원인 확정: 기기 셸 직접 측정 — `__down` 200(1MB/2.4s)·`__up` 빈 POST 200·256KB POST 200(1.9s, ≈1.1Mbps) 전부 정상, 앱 4병렬×1MB는 파이프 공유로 30초 경계에 걸려 실패. 구 0.3.1 설치분이기도 했음(코드 0.5.0, 기기 0.3.1) → 0.5.0 재설치 후에도 재현되어 근본 수정
+- 검증: `./gradlew assembleDebug` 성공, S22 실검증 — 속도 탭 측정 완료 ↓2.42Mbps ↑1.11Mbps(확정, 4194304B/30264ms) → 기록 저장, ERROR 0
+
 ## v0.5.0 — 2026-10-06 — 스케줄러 WorkManager 이관 + 속도 탭 [android] (릴리즈)
 
 - **근본 수정 (T-26)**: 백그라운드 FGS 시작 크래시 6회 (`ForegroundServiceStartNotAllowedException`, dataSync 시간 제한) — `IpRotationService` 삭제, `RotationWorker`+`RotationSchedule`로 이관. 주기=Periodic, 실행=expedited 1회, 실행 중에만 `setForeground` 승격. 등록 지점: 앱 시작·부팅·토글ON·주기변경. 주기 하한 15분 (`coerceAtLeast`)

@@ -133,6 +133,9 @@ class SpeedTester(private val client: OkHttpClient = defaultClient) {
      * 업로드: 스트림당 고정 본문을 POST하고 벽시계로 환산.
      * (버퍼 write를 세면 뻥튀기/0Mbps가 나오므로, 완료된 바이트/경과시간만 쓴다.
      * live 표시는 진행률 참고용.)
+     * 저속 링크에서는 제한 시간 안에 전량 전송+서버 200 응답이 안 올 수 있다.
+     * 전송 바이트/벽시계 자체가 속도이므로 서버 확답이 없어도 추정값으로 성공 처리한다.
+     * 전송 0B일 때만 실패.
      */
     suspend fun upload(onSample: (mbps: Double, bytesTotal: Long) -> Unit): TestResult =
         withContext(Dispatchers.IO) {
@@ -189,12 +192,15 @@ class SpeedTester(private val client: OkHttpClient = defaultClient) {
                     cancel()
                     val total = sentBytes.get()
                     val elapsed = (System.currentTimeMillis() - start).coerceAtLeast(1)
-                    if (total <= 0 || !anySuccess) {
-                        DebugLogger.e("업로드 측정 실패 (전송 ${total}B, 성공응답 $anySuccess)", "E-AND-NET-0004")
+                    if (total <= 0) {
+                        DebugLogger.e("업로드 측정 실패 (전송 0B, 성공응답 $anySuccess)", "E-AND-NET-0004")
                         return@coroutineScope TestResult(false, bytesUsed = total, errorCode = "E-AND-NET-0004")
                     }
+                    // T-29 — 저속 링크(≈1Mbps)에서는 30초 안에 4MB 전량+서버 확답이 안 와도
+                    // 전송 바이트 자체가 유효한 측정값이므로 추정 성공 처리 (서버 확답 없어도 OK).
                     val avg = total * 8.0 / elapsed / 1000.0
-                    DebugLogger.i("[NET] 업로드 측정: ${"%.2f".format(avg)}Mbps (${total}B/${elapsed}ms)")
+                    val tag = if (anySuccess) "확정" else "추정(서버 확답 없음)"
+                    DebugLogger.i("[NET] 업로드 측정($tag): ${"%.2f".format(avg)}Mbps (${total}B/${elapsed}ms)")
                     TestResult(true, avg, total)
                 }
             } catch (e: Exception) {

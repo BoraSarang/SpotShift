@@ -60,3 +60,17 @@ data class RotationState(
     val attempt: Int = 0,
     val errorCode: String? = null
 )
+
+/**
+ * v0.5 (T-27) — 속도 탭 측정 기록 1건.
+ */
+data class SpeedRecord(
+    val id: Long = 0L,
+    val timestamp: Long = System.currentTimeMillis(),
+    val networkType: String = "",
+    val downloadMbps: Float? = null,
+    val uploadMbps: Float? = null,
+    val latencyMs: Long? = null,
+    val bytesUsed: Long = 0L,
+    val signal: String? = null
+)

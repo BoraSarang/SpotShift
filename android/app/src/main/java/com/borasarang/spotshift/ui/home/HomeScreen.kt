@@ -144,7 +144,10 @@ fun HomeScreen(contentPadding: PaddingValues) {
             // 변경 후 속도 검증 기준 표시
             speedThresholdText = "속도 기준: ${"%.0f".format(config.speedThresholdMbps)}Mbps 미만 시 재변경",
             // v0.4 — 최근 변경 요약 (x→y + 측정 속도/사유)
-            lastSpeedText = lastSpeed?.let { "최근 측정: ${"%.1f".format(it)}Mbps" },
+            // v0.5 — B/s 병기
+            lastSpeedText = lastSpeed?.let {
+                "최근 측정: ${com.borasarang.spotshift.ui.components.formatMbps(it.toDouble())}"
+            },
             // v0.4 (T-19) — 접속 상태 표시
             signalText = signalText
         )

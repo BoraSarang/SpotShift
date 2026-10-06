@@ -7,6 +7,7 @@
 - **근본 수정 (T-26)**: 백그라운드 FGS 시작 크래시 6회 (`ForegroundServiceStartNotAllowedException`, dataSync 시간 제한) — `IpRotationService` 삭제, `RotationWorker`+`RotationSchedule`로 이관. 주기=Periodic, 실행=expedited 1회, 실행 중에만 `setForeground` 승격. 등록 지점: 앱 시작·부팅·토글ON·주기변경. 주기 하한 15분 (`coerceAtLeast`)
 - **FGS 타입 크래시 추가 해결**: WorkManager 2.9.0 `SystemForegroundService`에 타입 선언 없음 → API 34+ `InvalidForegroundServiceTypeException`. manifest에 `dataSync` 주입 + `ForegroundInfo` 3-arg 명시
 - **표현 수정**: 속도 미달 시 "포기" → "기준 미달 (IP 변경은 완료)" (Worker 로그 + 수동 기록)
+- **속도 탭 (T-27)**: fast.com식 실시간 측정 (다운 4연결·업 POST·지연, 500ms live, 램프업 제외) + 접속상태(LTE/Wi-Fi 각각) + 72→64MB 상한 명시 + 미달 시 IP 변경하기→자동 재측정→전/후 비교(유지/다시변경 최대 3회) + 기록(접속·측정값·신호, 개별삭제·초기화확인). 버그 수정: 업로드 버퍼집계 0Mbps→벽시계 환산, 저속링크 타임아웃→페이로드 12→4MB
 - 검증: `./gradlew assembleDebug` 성공, S22 실검증 — tick→run→DATA_RECONNECT 성공 (39.7.46.50→39.7.25.85) → 속도 2.62Mbps 달성 종료, 신규 크래시 0. 배터리 "제한 없음"+"설정 열기" UI 확인. 30분 주기 자연 실행 확인 (11:44 앱 미실행 상태, 새 프로세스에서 run→39.7.25.85→118.235.13.26→3.31Mbps 달성)
 
 ## v0.4.1 — 2026-10-05 — 무조건 변경 확정 + 스케줄 스킵 폐지 + 무음 버그 수정 [android] (미릴리즈)

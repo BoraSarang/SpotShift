@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowForward
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -20,7 +21,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
@@ -38,6 +41,8 @@ fun HistoryScreen(contentPadding: PaddingValues) {
     DebugLogger.feature("HistoryScreen", "표시됨")
     val viewModel: HomeViewModel = viewModel()
     val records by viewModel.records.collectAsState()
+    // v0.5 — 기록 초기화 확인 다이얼로그 (속도 탭과 동일 규칙)
+    var showClearConfirm by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -47,10 +52,7 @@ fun HistoryScreen(contentPadding: PaddingValues) {
         // v0.2 — 요구사항 3: 기록 초기화
         if (records.isNotEmpty()) {
             TextButton(
-                onClick = {
-                    DebugLogger.feature("HistoryScreen", "기록 초기화 실행됨")
-                    viewModel.clearRecords()
-                },
+                onClick = { showClearConfirm = true },
                 modifier = Modifier.align(Alignment.End).padding(end = 16.dp, top = 8.dp)
             ) {
                 Text("기록 초기화", color = MaterialTheme.colorScheme.error)
@@ -82,6 +84,24 @@ fun HistoryScreen(contentPadding: PaddingValues) {
                 RecordItem(record)
             }
         }
+    }
+
+    if (showClearConfirm) {
+        AlertDialog(
+            onDismissRequest = { showClearConfirm = false },
+            title = { Text("기록 초기화") },
+            text = { Text("변경 기록을 모두 삭제할까요?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    DebugLogger.feature("HistoryScreen", "기록 초기화 실행됨")
+                    viewModel.clearRecords()
+                    showClearConfirm = false
+                }) { Text("삭제") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearConfirm = false }) { Text("취소") }
+            }
+        )
     }
 }
 

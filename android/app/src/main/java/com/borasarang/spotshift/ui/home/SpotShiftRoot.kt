@@ -3,6 +3,7 @@ package com.borasarang.spotshift.ui.home
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Speed
 import androidx.compose.material.icons.outlined.WifiTethering
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -25,6 +26,7 @@ fun SpotShiftRoot() {
     val tabs = listOf(
         stringResource(R.string.tab_status) to Icons.Outlined.WifiTethering,
         stringResource(R.string.tab_history) to Icons.Outlined.History,
+        stringResource(R.string.tab_speed) to Icons.Outlined.Speed,
         stringResource(R.string.tab_settings) to Icons.Outlined.Settings
     )
 
@@ -45,6 +47,7 @@ fun SpotShiftRoot() {
         when (selectedTab) {
             0 -> HomeScreen(contentPadding = innerPadding)
             1 -> HistoryScreen(contentPadding = innerPadding)
+            2 -> com.borasarang.spotshift.ui.speed.SpeedScreen(contentPadding = innerPadding)
             else -> SettingsScreen(contentPadding = innerPadding)
         }
     }

@@ -23,7 +23,7 @@ adb shell "logcat -d -s AndroidRuntime:E"   # 크래시 확인
 - 진입: `SpotShiftApp.kt` (토글 ON이면 주기 작업 등록) → `MainActivity.kt` → 수동 변경은 `HomeViewModel.manualRotate` (인프로세스)
 - 핵심: `scheduler/RotationWorker.kt` (주기 틱→expedited 1회 실행→`core/RotationEngine.kt` 오케스트레이션) + `scheduler/RotationSchedule.kt` (등록/취소 단일 진입점) + `scheduler/Conditions.kt` (셀룰러만 실행 관문, 나머지는 기록용)
 - 수단 우선순위 (S22 실측 확정): `core/DataController.kt` (`svc data` 재연결) → `core/AirplaneController.kt` (`cmd connectivity airplane-mode`) 폴백. 검증은 `core/IpVerifier.kt` (ipify) + `core/SpeedChecker.kt` (변경 후 측정, 기준 미달 시 최대 3회 재변경)
-- 상태: `data/Prefs.kt` (DataStore, 키별 `update*` — 통째 save 금지, 콜드스타트 fresh read) / `receiver/BootReceiver.kt` (재부팅 복원) / `ui/` (Compose Material3 3탭: home/history/settings)
+- 상태: `data/Prefs.kt` (DataStore, 키별 `update*` — 통째 save 금지, 콜드스타트 fresh read) / `receiver/BootReceiver.kt` (재부팅 복원) / `ui/` (Compose Material3 4탭: home/history/speed/settings)
 - 루트 `index.html`은 GitHub Pages 랜딩, 앱 코드 아님.
 
 ## S22 / API 36 제약 (재발 방지)

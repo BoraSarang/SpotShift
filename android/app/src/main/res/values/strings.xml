@@ -4,5 +4,6 @@
     <string name="tile_label">SpotShift</string>
     <string name="tab_status">상태</string>
     <string name="tab_history">기록</string>
+    <string name="tab_speed">속도</string>
     <string name="tab_settings">설정</string>
 </resources>

@@ -78,6 +78,46 @@ class Prefs(private val context: Context) {
     suspend fun getLastTickAt(): Long =
         context.dataStore.data.first()[KEY_LAST_TICK] ?: 0L
 
+    // v0.5 (T-27) — 속도 탭 측정 기록 (개별 삭제 + 전체 초기화)
+    val speedRecordsFlow: Flow<List<SpeedRecord>> = context.dataStore.data.map { prefs ->
+        val raw = prefs[KEY_SPEED_RECORDS] ?: return@map emptyList()
+        runCatching {
+            com.google.gson.Gson().fromJson(raw, Array<SpeedRecord>::class.java).toList()
+        }.getOrDefault(emptyList())
+    }
+
+    suspend fun addSpeedRecord(record: SpeedRecord) {
+        context.dataStore.edit { prefs ->
+            val current = prefs[KEY_SPEED_RECORDS]?.let { raw ->
+                runCatching {
+                    com.google.gson.Gson().fromJson(raw, Array<SpeedRecord>::class.java).toList()
+                }.getOrDefault(emptyList())
+            } ?: emptyList()
+            val updated = (listOf(record.copy(id = System.currentTimeMillis())) + current)
+                .take(MAX_SPEED_RECORDS)
+            prefs[KEY_SPEED_RECORDS] = com.google.gson.Gson().toJson(updated)
+        }
+        DebugLogger.feature("Prefs", "addSpeedRecord ${record.downloadMbps}Mbps")
+    }
+
+    suspend fun deleteSpeedRecord(id: Long) {
+        context.dataStore.edit { prefs ->
+            val raw = prefs[KEY_SPEED_RECORDS] ?: return@edit
+            val updated = runCatching {
+                com.google.gson.Gson().fromJson(raw, Array<SpeedRecord>::class.java).toList()
+            }.getOrDefault(emptyList()).filterNot { it.id == id || it.timestamp == id }
+            if (updated.isEmpty()) prefs.remove(KEY_SPEED_RECORDS)
+            else prefs[KEY_SPEED_RECORDS] = com.google.gson.Gson().toJson(updated)
+        }
+    }
+
+    suspend fun clearSpeedRecords() {
+        context.dataStore.edit { prefs ->
+            prefs.remove(KEY_SPEED_RECORDS)
+        }
+        DebugLogger.feature("Prefs", "clearSpeedRecords 실행됨")
+    }
+
     /**
      * 마지막 IP 변경 시각 (상태 알림·홈 카운트다운의 다음 변경 예상 시각 계산용).
      */
@@ -147,7 +187,11 @@ class Prefs(private val context: Context) {
         private val KEY_EVENT_ALERT = booleanPreferencesKey("event_alert_enabled")
         // v0.5 — WorkManager 주기 틱 실행 시각
         private val KEY_LAST_TICK = longPreferencesKey("last_schedule_tick_at")
+        // v0.5 (T-27) — 속도 탭 측정 기록
+        private val KEY_SPEED_RECORDS = stringPreferencesKey("speed_records_json")
 
         private const val MAX_RECORDS = 200
+        // v0.5 (T-27) — 속도 기록 최대 보관
+        private const val MAX_SPEED_RECORDS = 100
     }
 }

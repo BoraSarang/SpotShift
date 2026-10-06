@@ -7,12 +7,11 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
-import androidx.core.content.ContextCompat
 import com.borasarang.spotshift.DebugLogger
 import com.borasarang.spotshift.MainActivity
 import com.borasarang.spotshift.core.ShizukuManager
 import com.borasarang.spotshift.data.Prefs
-import com.borasarang.spotshift.service.IpRotationService
+import com.borasarang.spotshift.scheduler.RotationSchedule
 import kotlinx.coroutines.runBlocking
 
 /**
@@ -33,12 +32,10 @@ class BootReceiver : BroadcastReceiver() {
                 return
             }
             runCatching {
-                val svc = Intent(app, IpRotationService::class.java)
-                    .setAction(IpRotationService.ACTION_START)
-                ContextCompat.startForegroundService(app, svc)
-                DebugLogger.feature("BootReceiver", "서비스 시작 요청")
+                RotationSchedule.enqueuePeriodic(app, config.intervalMinutes)
+                DebugLogger.feature("BootReceiver", "주기 작업 등록")
             }.onFailure { e ->
-                DebugLogger.e("부팅 시 서비스 시작 실패", "E-AND-SRV-0001", e as? Exception)
+                DebugLogger.e("부팅 시 주기 작업 등록 실패", "E-AND-SRV-0001", e as? Exception)
                 notifyTapToStart(app, "SpotShift를 탭하여 시작하세요")
             }
             if (!ShizukuManager.isReady) {

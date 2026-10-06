@@ -138,6 +138,12 @@ fun SettingsScreen(contentPadding: PaddingValues) {
                     )
                     if (!batteryUnrestricted) {
                         OutlinedButton(onClick = {
+                            viewModel.requestBatteryExemption()
+                        }) {
+                            Text("배터리 예외 설정")
+                        }
+                    } else {
+                        OutlinedButton(onClick = {
                             viewModel.openBatteryOptimizationSettings()
                         }) {
                             Text("설정 열기")

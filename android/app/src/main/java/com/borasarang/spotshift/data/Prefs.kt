@@ -66,6 +66,19 @@ class Prefs(private val context: Context) {
     }
 
     /**
+     * v0.5 — WorkManager 주기 틱 실행 시각 (스케줄 동작 여부 진단용).
+     * 실제 변경 시각(last_rotation_at)과 별개로, 틱이 돌았는지만 기록한다.
+     */
+    suspend fun updateScheduleTick(tickAt: Long) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_LAST_TICK] = tickAt
+        }
+    }
+
+    suspend fun getLastTickAt(): Long =
+        context.dataStore.data.first()[KEY_LAST_TICK] ?: 0L
+
+    /**
      * 마지막 IP 변경 시각 (상태 알림·홈 카운트다운의 다음 변경 예상 시각 계산용).
      */
     suspend fun getLastRotationAt(): Long =
@@ -132,6 +145,8 @@ class Prefs(private val context: Context) {
         private val KEY_BOOT_AUTO = booleanPreferencesKey("boot_auto_start")
         // v0.4 — 변경 시작/완료 알림
         private val KEY_EVENT_ALERT = booleanPreferencesKey("event_alert_enabled")
+        // v0.5 — WorkManager 주기 틱 실행 시각
+        private val KEY_LAST_TICK = longPreferencesKey("last_schedule_tick_at")
 
         private const val MAX_RECORDS = 200
     }

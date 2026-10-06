@@ -1,11 +1,11 @@
 package com.borasarang.spotshift.service
 
-import android.content.Intent
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import com.borasarang.spotshift.DebugLogger
 import com.borasarang.spotshift.core.ShizukuManager
 import com.borasarang.spotshift.data.Prefs
+import com.borasarang.spotshift.scheduler.RotationSchedule
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 
 /**
  * Quick Settings 타일: IP 로테이션 시작/정지 토글.
+ * v0.5 — WorkManager 주기 등록/취소로 전환 (구 FGS 서비스 대체).
  */
 class SpotShiftTileService : TileService() {
 
@@ -36,10 +37,11 @@ class SpotShiftTileService : TileService() {
             val newEnabled = !config.enabled
             // 키별 저장: enabled 키만 건드림 (다른 키 덮어쓰기 불가)
             prefs.updateEnabled(newEnabled)
-
-            val intent = Intent(applicationContext, IpRotationService::class.java)
-            intent.action = if (newEnabled) IpRotationService.ACTION_START else IpRotationService.ACTION_STOP
-            applicationContext.startForegroundService(intent)
+            if (newEnabled) {
+                RotationSchedule.enqueuePeriodic(applicationContext, config.intervalMinutes)
+            } else {
+                RotationSchedule.cancel(applicationContext)
+            }
             updateTile(newEnabled)
         }
     }

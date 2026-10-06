@@ -28,3 +28,5 @@
 | T-22 | Prefs 키별 저장 + 콜드스타트 fresh read (알림 무음 버그 수정) | android | 완료 | 통째 saveConfig 폐지 → update* 13종, [CFG] 진입 로그, S22 무음 검증 |
 | T-23 | T-10 주기 내 스킵 폐지 (무조건 변경 원칙과 충돌) | android | 완료 | shouldSkipByRotation 호출 제거, S22 검증 대기 |
 | T-24 | 스마트 조건 재정의 (관문→체온계): 셀룰러만 관문+스킵 기록, 시간대 삭제, 신호 LTE RSRP 교체, 배터리·신호 기록 전환 | android | 완료 | S22 검증 — 자동 변경 실행+기록 `(배터리 79% · RSRP -100dBm)`, 홈 실시간 칩 |
+| T-25 | 배터리 섹션 버튼 반전 수정: 미설정 시 "배터리 예외 설정"(직접 요청 다이얼로그) / 설정 시 "설정 열기" | android | 완료(코드) | manifest REQUEST_IGNORE_BATTERY_OPTIMIZATIONS 추가, 미지원 기기는 목록 화면 폴백 — S22 UI 확인 대기 |
+| T-26 | PLAN_v0.5 스케줄러 WorkManager 이관 (FGS 백그라운드 크래시 6회 근본 수정, 주기 하한 15분, 서비스 완전 이관) | android | 완료 | S22 검증 — tick→run→DATA_RECONNECT 성공(39.7.46.50→39.7.25.85)·속도달성·크래시 0. FGS 타입 크래시 1건 발견→manifest 주입으로 해결 |

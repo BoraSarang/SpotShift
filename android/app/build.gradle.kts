@@ -69,6 +69,9 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.google.code.gson:gson:2.11.0")
 
+    // v0.5 — 주기 스케줄 WorkManager 이관 (인프로세스 delay 루프 + 백그라운드 FGS 크래시 제거)
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+
     implementation("dev.rikka.shizuku:api:13.1.5")
     implementation("dev.rikka.shizuku:provider:13.1.5")
 

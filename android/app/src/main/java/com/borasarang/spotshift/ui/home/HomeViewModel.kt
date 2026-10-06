@@ -5,7 +5,6 @@ import android.content.Intent
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.borasarang.spotshift.DebugLogger
@@ -20,7 +19,7 @@ import com.borasarang.spotshift.data.Prefs
 import com.borasarang.spotshift.data.RotationConfig
 import com.borasarang.spotshift.data.RotationRecord
 import com.borasarang.spotshift.data.RotationState
-import com.borasarang.spotshift.service.IpRotationService
+import com.borasarang.spotshift.scheduler.RotationSchedule
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -65,6 +64,26 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                 android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS
             ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             getApplication<Application>().startActivity(intent)
+        }
+    }
+
+    /**
+     * 배터리 예외 직접 요청 (미설정 상태의 기본 버튼).
+     * 시스템 허용 다이얼로그 1탭으로 예외 등록 — 복귀 시 ON_RESUME에서 상태 갱신.
+     * 요청 인텐트 미지원 기기에서는 목록 화면으로 폴백한다.
+     */
+    fun requestBatteryExemption() {
+        DebugLogger.feature("HomeViewModel", "배터리 예외 직접 요청")
+        val app = getApplication<Application>()
+        runCatching {
+            val intent = Intent(
+                android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                android.net.Uri.parse("package:${app.packageName}")
+            ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            app.startActivity(intent)
+        }.onFailure {
+            DebugLogger.e("배터리 예외 직접 요청 실패 — 목록 화면으로 폴백", "E-AND-SRV-0001", it as? Exception)
+            openBatteryOptimizationSettings()
         }
     }
     // v0.4 — 최근 측정 속도 표시용
@@ -124,20 +143,22 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     fun setEnabled(enabled: Boolean) {
         viewModelScope.launch {
             prefs.updateEnabled(enabled)
-            // v0.2 — 요구사항 5: 자동 IP 변경 토글이 서비스(스케줄러) 라이프사이클을 제어
-            val intent = Intent(getApplication(), IpRotationService::class.java)
+            // v0.5 — 자동 IP 변경 토글이 WorkManager 주기 라이프사이클을 제어 (구 FGS 서비스 대체)
             if (enabled) {
-                intent.action = IpRotationService.ACTION_START
-                ContextCompat.startForegroundService(getApplication(), intent)
+                RotationSchedule.enqueuePeriodic(getApplication(), prefs.getConfig().intervalMinutes)
             } else {
-                getApplication<Application>().stopService(intent)
+                RotationSchedule.cancel(getApplication())
             }
             DebugLogger.feature("HomeViewModel", "setEnabled=$enabled")
         }
     }
 
     // 키별 저장 중계 (통째 덮어쓰기 금지 — Prefs 참조)
-    fun updateIntervalMinutes(v: Int) = launchUpdate { prefs.updateIntervalMinutes(v) }
+    fun updateIntervalMinutes(v: Int) = launchUpdate {
+        prefs.updateIntervalMinutes(v)
+        // v0.5 — 주기 변경 시 다음 실행부터 반영되도록 재등록 (토글 ON일 때만)
+        if (prefs.getConfig().enabled) RotationSchedule.enqueuePeriodic(getApplication(), v)
+    }
     fun updateRetryCount(v: Int) = launchUpdate { prefs.updateRetryCount(v) }
     fun updateFallback(v: Boolean) = launchUpdate { prefs.updateFallback(v) }
     fun updateHotspotAuto(v: Boolean) = launchUpdate { prefs.updateHotspotAuto(v) }
@@ -183,7 +204,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                         break
                     }
                     if (attempt >= maxAttempts) {
-                        lastRecord = finishManual(base, "측정 ${label}Mbps < 기준 ${threshold}Mbps — 포기")
+                        lastRecord = finishManual(base, "측정 ${label}Mbps < 기준 ${threshold}Mbps — 기준 미달 (IP 변경은 완료)")
                         break
                     }
                     // 재변경 전 중간 기록 (최종 기록은 루프 종료 시 최신으로 표시)

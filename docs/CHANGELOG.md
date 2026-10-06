@@ -2,6 +2,13 @@
 
 > 형식: `[android] 버전 — 날짜 — 요약 (에러코드/성능 기록)`
 
+## v0.5 — 2026-10-06 — 스케줄러 WorkManager 이관 [android] (미릴리즈)
+
+- **근본 수정 (T-26)**: 백그라운드 FGS 시작 크래시 6회 (`ForegroundServiceStartNotAllowedException`, dataSync 시간 제한) — `IpRotationService` 삭제, `RotationWorker`+`RotationSchedule`로 이관. 주기=Periodic, 실행=expedited 1회, 실행 중에만 `setForeground` 승격. 등록 지점: 앱 시작·부팅·토글ON·주기변경. 주기 하한 15분 (`coerceAtLeast`)
+- **FGS 타입 크래시 추가 해결**: WorkManager 2.9.0 `SystemForegroundService`에 타입 선언 없음 → API 34+ `InvalidForegroundServiceTypeException`. manifest에 `dataSync` 주입 + `ForegroundInfo` 3-arg 명시
+- **표현 수정**: 속도 미달 시 "포기" → "기준 미달 (IP 변경은 완료)" (Worker 로그 + 수동 기록)
+- 검증: `./gradlew assembleDebug` 성공, S22 실검증 — tick→run→DATA_RECONNECT 성공 (39.7.46.50→39.7.25.85) → 속도 2.62Mbps 달성 종료, 신규 크래시 0. 배터리 "제한 없음"+"설정 열기" UI 확인. 30분 주기 자연 실행 확인 (11:44 앱 미실행 상태, 새 프로세스에서 run→39.7.25.85→118.235.13.26→3.31Mbps 달성)
+
 ## v0.4.1 — 2026-10-05 — 무조건 변경 확정 + 스케줄 스킵 폐지 + 무음 버그 수정 [android] (미릴리즈)
 
 - **의미 변경**: 속도 기준은 변경 전 건너뛰기가 아니라 변경 후 검증. 주기가 되면 무조건 변경 → 측정 → 기준(1~50Mbps, 기본 2) 미달이면 재변경 최대 3회. T-10 주기 내 스킵 폐지 (shouldSkipByRotation 호출 제거)
@@ -9,6 +16,7 @@
 - **스크립트**: spotshift_rotate.sh 기본=요청만, --wait/-w/--verbose/-v 대기, No route to host 시 kill-server/start-server 자동복구
 - **스마트 조건 재정의 (T-24)**: 셀룰러 모드만 실행 전 관문(스킵 시 로그+기록). 시간대 설정 UI 없어 죽은 코드 삭제. 신호 체크가 와이파이 RSSI(-127 쓰레기값)를 보던 버그 → SignalMonitor LTE RSRP로 교체. 배터리·신호는 실행을 막지 않고 기록 note에 동봉 ("배터리 79% · RSRP -100dBm"). 홈 칩도 설정값 표시에서 실시간 값으로 전환
 - 빌드: `./gradlew assembleDebug` 성공, S22 설치+실행. 검증 대기: 다음 주기 자동 변경 실동작 + 무음 재확인
+- **배터리 버튼 반전 수정 (T-25)**: 미설정 시 "배터리 예외 설정"(ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS 직접 요청 다이얼로그, manifest 권한 추가, 미지원 기기는 목록 화면 폴백) / 설정 시 "설정 열기" — S22 UI 확인 대기
 
 ## v0.4.0 — 2026-10-04 — 속도 조건 + 부팅 복원 [android] (구현 완료·실검증 대기)
 

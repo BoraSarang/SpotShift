@@ -8,6 +8,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- 배터리 예외 직접 요청용 (설정 화면 "배터리 예외 설정" 버튼) -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <!-- v0.4 (T-19) — 접속 상태 표시용 (없으면 축소 표시) -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
@@ -41,11 +43,6 @@
             android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
 
         <service
-            android:name=".service.IpRotationService"
-            android:exported="false"
-            android:foregroundServiceType="dataSync" />
-
-        <service
             android:name=".service.SpotShiftTileService"
             android:exported="true"
             android:label="@string/tile_label"
@@ -57,6 +54,13 @@
                 android:name="android.service.quicksettings.ACTIVE_TILE"
                 android:resource="@bool/active_tile" />
         </service>
+
+        <!-- v0.5 — WorkManager 내부 SystemForegroundService에 dataSync 타입 주입.
+             라이브러리(2.9.0) 선언에 타입이 없어 API 34+에서 type=none 금지 크래시 발생.
+             런타임 ForegroundInfo에도 동일 타입 전달 (RotationWorker). -->
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="dataSync" />
 
         <receiver
             android:name=".receiver.BootReceiver"

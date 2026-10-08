@@ -20,14 +20,16 @@ import com.borasarang.spotshift.data.RotationPhase
 fun RotationProgress(
     phase: RotationPhase,
     attempt: Int = 0,
+    totalAttempts: Int = 3,
     modifier: Modifier = Modifier
 ) {
     val label = when (phase) {
         RotationPhase.CHECKING_IP -> "현재 IP 확인 중"
         RotationPhase.ROTATING_DATA -> "모바일 데이터 재연결 중"
         RotationPhase.VERIFYING -> "IP 변경 확인 중"
-        RotationPhase.RETRYING -> "재시도 중 ($attempt/3)"
+        RotationPhase.RETRYING -> "재시도 중 ($attempt/$totalAttempts)"
         RotationPhase.FALLBACK_AIRPLANE -> "에어플레인 모드 전환"
+        RotationPhase.SPEED_CHECKING -> "속도 측정 중"
         else -> null
     } ?: return
 

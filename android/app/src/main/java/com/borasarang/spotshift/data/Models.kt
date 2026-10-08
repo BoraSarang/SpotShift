@@ -38,7 +38,9 @@ data class RotationConfig(
     // v0.4 (T-18) — 부팅 시 자동 시작
     val bootAutoStart: Boolean = true,
     // v0.4 — 변경 시작/완료 알림 (끄면 상태 알림만 유지)
-    val eventAlertEnabled: Boolean = true
+    val eventAlertEnabled: Boolean = true,
+    // T-33 — 연동 계약 v1: 외부(RelayConsole 등) 원격 요청 허용 (끄면 거부 로그만)
+    val pluginAllowed: Boolean = true
 )
 
 enum class RotationPhase {
@@ -48,6 +50,7 @@ enum class RotationPhase {
     VERIFYING,
     RETRYING,
     FALLBACK_AIRPLANE,
+    SPEED_CHECKING,
     SUCCESS,
     FAILED
 }

@@ -166,6 +166,8 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     fun updateSpeedRechecks(v: Int) = launchUpdate { prefs.updateSpeedRechecks(v) }
     fun updateBootAuto(v: Boolean) = launchUpdate { prefs.updateBootAuto(v) }
     fun updateEventAlert(v: Boolean) = launchUpdate { prefs.updateEventAlert(v) }
+    // T-33 — 연동 계약 v1: 외부 원격 요청 허용 토글
+    fun updatePluginAllowed(v: Boolean) = launchUpdate { prefs.updatePluginAllowed(v) }
 
     private fun launchUpdate(block: suspend () -> Unit) {
         viewModelScope.launch { block() }
@@ -188,6 +190,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             while (attempt < maxAttempts) {
                 attempt++
                 val base = engine.rotate(cfg)
+                engine.notifySpeedChecking()
                 val speed = speedChecker.measure()
                 val speedNote = if (speed.success && speed.mbps != null) {
                     prefs.updateLastSpeed(speed.mbps.toFloat())

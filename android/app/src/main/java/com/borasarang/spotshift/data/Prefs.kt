@@ -31,7 +31,9 @@ class Prefs(private val context: Context) {
             speedThresholdMbps = prefs[KEY_SPEED_THRESHOLD] ?: 2.0f,
             speedMaxRechecks = prefs[KEY_SPEED_RECHECKS] ?: 3,
             bootAutoStart = prefs[KEY_BOOT_AUTO] ?: true,
-            eventAlertEnabled = prefs[KEY_EVENT_ALERT] ?: true
+            eventAlertEnabled = prefs[KEY_EVENT_ALERT] ?: true,
+            // T-33 — 연동 계약 v1: 외부 원격 요청 허용
+            pluginAllowed = prefs[KEY_PLUGIN_ALLOWED] ?: true
         )
     }
 
@@ -52,6 +54,8 @@ class Prefs(private val context: Context) {
     suspend fun updateSpeedRechecks(v: Int) = editKey { it[KEY_SPEED_RECHECKS] = v }
     suspend fun updateBootAuto(v: Boolean) = editKey { it[KEY_BOOT_AUTO] = v }
     suspend fun updateEventAlert(v: Boolean) = editKey { it[KEY_EVENT_ALERT] = v }
+    // T-33 — 연동 계약 v1: 외부 원격 요청 허용
+    suspend fun updatePluginAllowed(v: Boolean) = editKey { it[KEY_PLUGIN_ALLOWED] = v }
 
     private suspend fun editKey(block: (androidx.datastore.preferences.core.MutablePreferences) -> Unit) {
         context.dataStore.edit(block)
@@ -185,6 +189,8 @@ class Prefs(private val context: Context) {
         private val KEY_BOOT_AUTO = booleanPreferencesKey("boot_auto_start")
         // v0.4 — 변경 시작/완료 알림
         private val KEY_EVENT_ALERT = booleanPreferencesKey("event_alert_enabled")
+        // T-33 — 연동 계약 v1: 외부 원격 요청 허용
+        private val KEY_PLUGIN_ALLOWED = booleanPreferencesKey("plugin_allowed")
         // v0.5 — WorkManager 주기 틱 실행 시각
         private val KEY_LAST_TICK = longPreferencesKey("last_schedule_tick_at")
         // v0.5 (T-27) — 속도 탭 측정 기록

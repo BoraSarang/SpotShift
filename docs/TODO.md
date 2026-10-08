@@ -38,3 +38,4 @@
 | T-32 | 연동 계약 v1 문서 (RelayConsole 플러그인용) | android | 완료 | `docs/PLUGIN_CONTRACT.md` — 명찰·`autorotate` 호출·`[REMOTE]` 로그 형식·ON/OFF AND·버전 규칙 |
 | T-33 | 연동 계약 v1 구현 (명찰·프로브·토글·거부) | android | 완료 | manifest 명찰 3키 + `PluginProbeReceiver`(dumpsys 미표시 실측으로 프로브 방식 채택) + 설정 `연동 허용` + OFF시 `[REMOTE] 거부됨` — S22 실검증: force-stop 상태 프로브 응답·크래시 0 |
 | T-34 | 속도 측정 후 최종 상태 복원 (진행 표시 고착 수정) | android | 완료 | T-30 후유증: `SPEED_CHECKING`에서 안 돌아와 스피너 영구 표시 → `notifySpeedFinished()`로 SUCCESS/FAILED 복원 — S22 실검증: 측정 후 `phase=SUCCESS` + `[REMOTE]` 결과 로그 |
+| T-35 | 연동 SDK v2 L2 승격 (Provider·브로드캐스트·EVENT·직접 로그) | android | 완료(코드) | `PluginInfoProvider` + `PluginActionReceiver`(전면 경로 제거) + 주기 변경 `[EVENT]` + `PluginLog` 직접 Log — 기기: 프로브v2·Provider 조회 검증, 회전 실사격은 발열로 보류 |

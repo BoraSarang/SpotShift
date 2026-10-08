@@ -70,3 +70,10 @@ adb shell "logcat -d -s AndroidRuntime:E"             # 크래시 0건
 - T-30 후유증: `SPEED_CHECKING` 진입 후 복귀 호출이 없어 홈 진행 표시 영구 노출.
 - `RotationEngine.notifySpeedFinished()` 추가, `HomeViewModel.manualRotate` 종료 시 호출.
 - S22 실검증: 측정 후 `phase=SUCCESS` + `[REMOTE]` 결과 로그.
+
+## 10. T-35 연동 SDK v2 L2 승격 (2026-10-08)
+
+- 규칙 원천: RelayConsole `docs/PLUGIN_SDK.md`. 본 repo `PLUGIN_CONTRACT.md`는 구현 기록으로 축소.
+- `PluginInfoProvider` (§3) + `PluginActionReceiver` (§4, v1 전면 경로 제거) + 주기 변경 `[EVENT]` (§6) + `PluginLog` 직접 Log (§8).
+- 거부·무효·실패 코드 `E-AND-PLG-0001~0003` (`error_message_ko.json`).
+- 기기 검증: 프로브 v2 + Provider 조회 (회전 실사격은 발열로 보류).

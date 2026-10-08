@@ -61,6 +61,20 @@ class RotationEngine(
         update { copy(phase = RotationPhase.SPEED_CHECKING, message = "속도 측정 중") }
     }
 
+    /**
+     * T-34 — 속도 측정 종료 후 최종 상태 복원.
+     * notifySpeedChecking()으로 바뀐 phase를 SUCCESS/FAILED로 되돌린다.
+     * 안 그러면 진행 표시가 영원히 돌아 `계속 동작`처럼 보인다.
+     */
+    fun notifySpeedFinished(changed: Boolean, message: String?) {
+        update {
+            copy(
+                phase = if (changed) RotationPhase.SUCCESS else RotationPhase.FAILED,
+                message = message
+            )
+        }
+    }
+
     suspend fun rotate(config: RotationConfig): RotationRecord = mutex.withLock {
         onRotationStarted?.invoke()
         eventAlert = config.eventAlertEnabled

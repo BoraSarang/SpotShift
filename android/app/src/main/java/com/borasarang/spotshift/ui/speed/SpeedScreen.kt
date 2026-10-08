@@ -303,10 +303,11 @@ fun SpeedScreen(contentPadding: PaddingValues) {
 private fun rotationText(phase: RotationPhase): String = when (phase) {
     RotationPhase.IDLE -> "대기 중"
     RotationPhase.CHECKING_IP -> "현재 IP 확인 중"
-    RotationPhase.ROTATING_DATA -> "IP 변경 중 (데이터 재연결)"
+    RotationPhase.ROTATING_DATA -> "모바일 데이터 재연결 중"
     RotationPhase.VERIFYING -> "IP 변경 확인 중"
     RotationPhase.RETRYING -> "재시도 중"
     RotationPhase.FALLBACK_AIRPLANE -> "에어플레인 폴백 시도"
+    RotationPhase.SPEED_CHECKING -> "속도 측정 중"
     RotationPhase.SUCCESS -> "IP 변경 완료"
     RotationPhase.FAILED -> "IP 변경 실패"
 }

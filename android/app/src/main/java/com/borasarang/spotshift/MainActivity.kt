@@ -13,11 +13,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.ViewModelProvider
 import com.borasarang.spotshift.core.ShizukuManager
 import com.borasarang.spotshift.ui.home.HomeViewModel
 import com.borasarang.spotshift.ui.home.SpotShiftRoot
 import com.borasarang.spotshift.ui.theme.SpotShiftTheme
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
@@ -60,20 +62,30 @@ class MainActivity : ComponentActivity() {
     /**
      * v0.4 — Mac 원격 IP 변경 요청 (adb am start --ez spotshift.autorotate true).
      * 앱 미실행 시 실행 후 변경, 실행 중이면 즉시 변경한다.
+     * T-33 — 연동 계약 v1: `연동 허용` OFF면 거부 로그만 남기고 무시한다.
      */
     private fun handleAutorotate(intent: Intent?) {
         if (intent?.getBooleanExtra(EXTRA_AUTOROTATE, false) != true) return
         DebugLogger.feature("MainActivity", "원격 자동 변경 요청 수신")
-        runCatching {
-            ViewModelProvider(this)[HomeViewModel::class.java].manualRotate { record ->
-                DebugLogger.i(
-                    "[REMOTE] 원격 변경 결과 changed=${record.changed} " +
-                        "${record.oldIp ?: "-"} → ${record.newIp ?: "-"} " +
-                        (record.errorCode ?: record.note ?: "")
-                )
+        lifecycleScope.launch {
+            val allowed = runCatching {
+                com.borasarang.spotshift.data.Prefs(this@MainActivity).getConfig().pluginAllowed
+            }.getOrDefault(true)
+            if (!allowed) {
+                DebugLogger.i("[REMOTE] 거부됨 (연동 OFF)")
+                return@launch
             }
-        }.onFailure { e ->
-            DebugLogger.e("원격 자동 변경 실행 실패", "E-AND-SRV-0001", e as? Exception)
+            runCatching {
+                ViewModelProvider(this@MainActivity)[HomeViewModel::class.java].manualRotate { record ->
+                    DebugLogger.i(
+                        "[REMOTE] 원격 변경 결과 changed=${record.changed} " +
+                            "${record.oldIp ?: "-"} → ${record.newIp ?: "-"} " +
+                            (record.errorCode ?: record.note ?: "")
+                    )
+                }
+            }.onFailure { e ->
+                DebugLogger.e("원격 자동 변경 실행 실패", "E-AND-SRV-0001", e as? Exception)
+            }
         }
     }
 

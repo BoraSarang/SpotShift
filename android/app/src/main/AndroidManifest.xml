@@ -70,6 +70,27 @@
                 <action android:name="android.intent.action.QUICKBOOT_POWERON" />
             </intent-filter>
         </receiver>
+
+        <!-- T-33 — 연동 계약 v1 프로브 수신기 (명시적 브로드캐스트만 수신, UI 없음).
+             dumpsys는 application meta-data를 출력하지 않아 discovery는 이 리시버로 수행. -->
+        <receiver
+            android:name=".receiver.PluginProbeReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.borasarang.spotshift.PLUGIN_PROBE" />
+            </intent-filter>
+        </receiver>
+
+        <!-- T-33 — 연동 계약 v1 명찰 (문서용 선언, dumpsys에 미표시 — 실제 discovery는 PluginProbeReceiver) -->
+        <meta-data
+            android:name="spotshift.plugin.version"
+            android:value="1" />
+        <meta-data
+            android:name="spotshift.plugin.actions"
+            android:value="autorotate" />
+        <meta-data
+            android:name="spotshift.plugin.logTag"
+            android:value="SpotShift" />
     </application>
 
 </manifest>

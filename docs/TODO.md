@@ -33,3 +33,7 @@
 | T-27 | 속도 탭 (fast.com식): 실시간 다운·업·지연 측정 + 접속상태 + 미달 시 IP 변경→자동 재측정→전/후 비교 + 기록(삭제/초기화확인) + Mbps 옆 B/s 병기 + 결과/기록 레이아웃 정리 | android | 완료 | S22 검증 — 측정↓↑·기록저장·삭제·IP변경→재측정→비교(유지/다시변경) 전 플로우. 업로드 0Mbps 버그 2건 수정(버퍼집계→벽시계, 페이로드 축소) |
 | T-28 | 기록 탭 초기화 확인 다이얼로그 (속도 탭과 동일 규칙) | android | 완료 | S22 검증 — 다이얼로그 표시→취소→기록 보존 |
 | T-29 | 속도 탭 업로드 실패 수정 (저속 업링크에서 서버 확답 없어도 추정 성공 처리) | android | 완료 | S22 검증 — 0.5.0에서 재현(4MB 전송·성공응답 false→실패), 전송 바이트/벽시계 추정으로 성공 전환 후 ↓2.42↑1.11 측정 완료·기록 저장·ERROR 0 |
+| T-30 | 전 단계 진행 표시 (속도 측정 단계 누락 수정) | android | 완료(코드) | `SPEED_CHECKING` 추가 — 수동/자동 `measure()` 전 `notifySpeedChecking()` 호출, 홈 프로그레스·Worker 알림·속도탭 라벨에 `속도 측정 중` 표시 |
+| T-31 | 핫스팟 안내 개선 4점 (문구·오탐·데드코드·재시도 표기) | android | 완료(코드) | 설정 `핫스팟 꺼짐 안내` 개명·`isHotspotEnabled` Nullable(실패시 이전 표시 유지·안내 미발동)·`restartHotspot` ERROR 폐기·재시도 `attempt/total` 설정 연동·데이터재연결 문구 통일 — 기기 설치 전 |
+| T-32 | 연동 계약 v1 문서 (RelayConsole 플러그인용) | android | 완료 | `docs/PLUGIN_CONTRACT.md` — 명찰·`autorotate` 호출·`[REMOTE]` 로그 형식·ON/OFF AND·버전 규칙 |
+| T-33 | 연동 계약 v1 구현 (명찰·프로브·토글·거부) | android | 완료 | manifest 명찰 3키 + `PluginProbeReceiver`(dumpsys 미표시 실측으로 프로브 방식 채택) + 설정 `연동 허용` + OFF시 `[REMOTE] 거부됨` — S22 실검증: force-stop 상태 프로브 응답·크래시 0 |

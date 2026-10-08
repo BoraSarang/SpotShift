@@ -73,6 +73,8 @@ fun SettingsScreen(contentPadding: PaddingValues) {
     var speedMaxRechecks by remember { mutableStateOf(config.speedMaxRechecks) }
     var bootAutoStart by remember { mutableStateOf(config.bootAutoStart) }
     var eventAlertEnabled by remember { mutableStateOf(config.eventAlertEnabled) }
+    // T-33 — 연동 계약 v1: 외부 원격 요청 허용
+    var pluginAllowed by remember { mutableStateOf(config.pluginAllowed) }
 
     Column(
         modifier = Modifier
@@ -257,13 +259,13 @@ fun SettingsScreen(contentPadding: PaddingValues) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-                // v0.2 — 요구사항 5: 핫스팟 자동 켜기
+                // v0.2 — 요구사항 5: 핫스팟 꺼짐 안내 (API 36 자동 ON 불가라 설정 안내만 수행)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("핫스팟 자동 켜기", style = MaterialTheme.typography.bodyLarge)
+                    Text("핫스팟 꺼짐 안내", style = MaterialTheme.typography.bodyLarge)
                     Switch(
                         checked = hotspotAutoEnable,
                         onCheckedChange = { value ->
@@ -350,6 +352,27 @@ fun SettingsScreen(contentPadding: PaddingValues) {
                 }
                 Text(
                     "IP 변경 완료 때 소리가 1회 울립니다 (알림은 10초 후 자동 소멸, 상태 알림 1개 유지).",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                // T-33 — 연동 계약 v1: 외부(RelayConsole 등) 원격 요청 허용
+                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("연동 허용", style = MaterialTheme.typography.bodyLarge)
+                    Switch(
+                        checked = pluginAllowed,
+                        onCheckedChange = { value ->
+                            pluginAllowed = value
+                            viewModel.updatePluginAllowed(value)
+                        }
+                    )
+                }
+                Text(
+                    "외부 앱의 원격 IP 변경 요청을 받습니다. 끄면 거부 로그만 남깁니다.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

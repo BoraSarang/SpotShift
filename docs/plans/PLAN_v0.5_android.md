@@ -47,3 +47,20 @@ adb shell "logcat -d -s AndroidRuntime:E"             # 크래시 0건
 
 - Periodic 실행 시각은 구간 내 유동적 → "예상 시각"은 근사치로 표기 변경.
 - Doze에서 지연 가능 (예외 등록済라 정상 범위). Shizuku 바인더는 Worker 컨텍스트에서도 유효 (동일 UID).
+
+## 6. T-30 전 단계 진행 표시 (2026-10-08)
+
+- `RotationPhase.SPEED_CHECKING` 추가 — `measure()` 전 `RotationEngine.notifySpeedChecking()` 호출 (수동 `HomeViewModel`·자동 `RotationWorker` 동일).
+- 표시: 홈 `RotationProgress` + Worker 포그라운드 알림 + 속도탭 `rotationText`에 `속도 측정 중`.
+
+## 7. T-31 핫스팟 안내 개선 (2026-10-08, 기기 설치 전)
+- 설정 `핫스팟 자동 켜기`→`핫스팟 꺼짐 안내` (API 36 자동 ON 불가, 안내만 수행).
+- `isHotspotEnabled(): Boolean?` — 실패시 null, 호출처는 `== false` 확정일 때만 안내·이전 표시 유지.
+- `restartHotspot` ERROR 폐기 (TETHER_PRIVILEGED 차단 데드코드 삭제).
+- 재시도 `attempt/total` 설정 연동 + 데이터 재연결 문구 통일.
+
+## 8. T-32/T-33 연동 계약 v1 (2026-10-08)
+
+- `docs/PLUGIN_CONTRACT.md` — RelayConsole 플러그인 탭용. 명찰·`autorotate` 호출·`[REMOTE]` 로그·ON/OFF AND·버전 규칙.
+- 구현: manifest 명찰 3키 + `PluginProbeReceiver` + `RotationConfig.pluginAllowed` + 설정 `연동 허용` + OFF시 `[REMOTE] 거부됨 (연동 OFF)`.
+- S22 실검증: force-stop 상태에서 프로브 응답 `[PLUGIN] version=1 actions=autorotate logTag=SpotShift allowed=true`, 크래시 0.

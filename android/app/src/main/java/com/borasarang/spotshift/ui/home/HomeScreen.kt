@@ -63,7 +63,8 @@ fun HomeScreen(contentPadding: PaddingValues) {
 
     LaunchedEffect(Unit) {
         while (true) {
-            hotspotEnabled = hotspotController.isHotspotEnabled()
+            // T-31: 조회 실패(null)는 이전 표시 유지 — 꺼짐 오판 금지
+            hotspotEnabled = hotspotController.isHotspotEnabled() ?: hotspotEnabled
             if (publicIp == null) {
                 publicIp = com.borasarang.spotshift.core.IpVerifier().fetchPublicIp()
             }
@@ -198,6 +199,7 @@ fun HomeScreen(contentPadding: PaddingValues) {
             RotationProgress(
                 phase = rotationState.phase,
                 attempt = rotationState.attempt,
+                totalAttempts = config.retryCount + 1,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
         } else {

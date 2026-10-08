@@ -53,6 +53,14 @@ class RotationEngine(
         onStateChanged?.invoke(_state)
     }
 
+    /**
+     * 속도 측정 단계 표시용. 엔진 밖(SpeedChecker)에서 호출 전에 상태만 갱신.
+     * 수동/자동 경로 모두 measure() 직전에 호출한다.
+     */
+    fun notifySpeedChecking() {
+        update { copy(phase = RotationPhase.SPEED_CHECKING, message = "속도 측정 중") }
+    }
+
     suspend fun rotate(config: RotationConfig): RotationRecord = mutex.withLock {
         onRotationStarted?.invoke()
         eventAlert = config.eventAlertEnabled
@@ -60,9 +68,10 @@ class RotationEngine(
         DebugLogger.i("[CFG] 기준=${config.speedThresholdMbps}Mbps 알림=${config.eventAlertEnabled} 최대반복=${config.speedMaxRechecks}")
         // v0.4 — 시작 알림은 상태 알림이 phase로 표시하므로 별도 발행 없음 (단일 알림)
         val record = rotateInternal(config)
-        // v0.2 — 요구사항 5: 핫스팟 자동 켜기 옵션 확인 (회전 성공/실패 무관)
-        if (config.hotspotAutoEnable && !hotspotController.isHotspotEnabled()) {
-            DebugLogger.w("[NET] 핫스팟 꺼짐 감지 — 자동 켜기 시도")
+        // v0.2 — 요구사항 5: 핫스팟 꺼짐 안내 옵션 확인 (회전 성공/실패 무관)
+        // T-31: 조회 실패(null)는 꺼짐으로 오판 금지 — 확정 false일 때만 안내
+        if (config.hotspotAutoEnable && hotspotController.isHotspotEnabled() == false) {
+            DebugLogger.w("[NET] 핫스팟 꺼짐 감지 — 설정 안내")
             onHotspotOffDetected?.invoke()
         }
         onRotationCompletedNotify?.invoke(record)
@@ -75,7 +84,7 @@ class RotationEngine(
 
         update { copy(phase = RotationPhase.CHECKING_IP, message = "현재 IP 확인 중") }
         val oldIp = ipVerifier.fetchPublicIp()
-        update { copy(phase = RotationPhase.ROTATING_DATA, oldIp = oldIp, message = "IP 변경 중") }
+        update { copy(phase = RotationPhase.ROTATING_DATA, oldIp = oldIp, message = "모바일 데이터 재연결 중") }
 
         if (oldIp == null) {
             DebugLogger.e("시작 전 IP 조회 실패", "E-AND-NET-0001")
@@ -138,7 +147,7 @@ class RotationEngine(
                 newIp = ipVerifier.fetchPublicIp()
                 if (newIp != null && newIp != oldIp) {
                     DebugLogger.i("[NET] 에어플레인 폴백으로 IP 변경 성공: $oldIp → $newIp")
-                    if (!hotspotController.isHotspotEnabled()) {
+                    if (hotspotController.isHotspotEnabled() == false) {
                         DebugLogger.w("[NET] 핫스팟 꺼짐 감지 — 사용자 수동 복원 필요 (API 36 자동 복원 불가)")
                     }
                     return finish(

@@ -4,10 +4,14 @@ import android.content.ContentProvider
 import android.content.ContentValues
 import android.database.Cursor
 import android.database.MatrixCursor
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.net.Uri
+import android.util.Base64
 import com.borasarang.spotshift.BuildConfig
 import com.borasarang.spotshift.data.Prefs
 import kotlinx.coroutines.runBlocking
+import java.io.ByteArrayOutputStream
 
 /**
  * T-35 — 연동 계약 v2 §3 메타데이터 Provider (L2).
@@ -42,11 +46,29 @@ class PluginInfoProvider : ContentProvider() {
                 PluginContract.VERSION.toString(),
                 BuildConfig.VERSION_NAME,
                 allowed.toString(),
-                "", // iconBase64 (선택, 미제공 → 소비자 폴백)
+                loadIconBase64(),
                 PluginContract.ACTIONS_JSON
             )
         )
         return cursor
+    }
+
+    /**
+     * T-36 — 런처 아이콘 96px PNG base64 (SDK §3 iconBase64).
+     * 리소스 번들 없이 런타임 렌더라 아이콘 바뀌면 자동 반영. 실패하면 "" (소비자 폴백).
+     */
+    private fun loadIconBase64(): String {
+        val ctx = context?.applicationContext ?: return ""
+        return runCatching {
+            val drawable = ctx.packageManager.getApplicationIcon(ctx.packageName)
+            val bitmap = Bitmap.createBitmap(ICON_PX, ICON_PX, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bitmap)
+            drawable.setBounds(0, 0, ICON_PX, ICON_PX)
+            drawable.draw(canvas)
+            val stream = ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+            Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP)
+        }.getOrDefault("")
     }
 
     override fun getType(uri: Uri): String? = null
@@ -60,6 +82,7 @@ class PluginInfoProvider : ContentProvider() {
     ): Int = 0
 
     companion object {
+        private const val ICON_PX = 96
         val COLUMNS = arrayOf(
             "label",
             "description",

@@ -8,7 +8,7 @@
 | SDK | SpotShift |
 |---|---|
 | §2 프로브 | `receiver/PluginProbeReceiver.kt` — 명시적 브로드캐스트, 앱 미실행 응답, UI 없음. `plugin/PluginContract.probeLine()` (v2 + `appVersion`) |
-| §3 Provider | `plugin/PluginInfoProvider.kt` — `content://com.borasarang.spotshift.plugin/info` 단일 행 (`label·description·contractVersion·appVersion·allowed··actionsJson`) |
+| §3 Provider | `plugin/PluginInfoProvider.kt` — `content://com.borasarang.spotshift.plugin/info` 단일 행. `iconBase64`는 런처 어댑티브 벡터 96px PNG 런타임 렌더 (T-36) |
 | §4 액션 | `receiver/PluginActionReceiver.kt` — 브로드캐스트 `--es cmd autorotate`, 헤드리스 (수동 경로 미접촉). v1 MainActivity 전면 경로 제거済 |
 | §5 `[REMOTE]` | `plugin/PluginContract.remoteOk/remoteFail/remoteInvalid/remoteDenied()` — `action=`·`ok=` 전부, 실패 `errorCode=` |
 | §6 `[EVENT]` | `scheduler/RotationWorker.doRotate()` — `type=ip_changed` (자율 주기 변경 성공 시) |

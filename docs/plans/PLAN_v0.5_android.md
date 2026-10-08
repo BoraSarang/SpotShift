@@ -77,3 +77,8 @@ adb shell "logcat -d -s AndroidRuntime:E"             # 크래시 0건
 - `PluginInfoProvider` (§3) + `PluginActionReceiver` (§4, v1 전면 경로 제거) + 주기 변경 `[EVENT]` (§6) + `PluginLog` 직접 Log (§8).
 - 거부·무효·실패 코드 `E-AND-PLG-0001~0003` (`error_message_ko.json`).
 - 기기 검증: 프로브 v2 + Provider 조회 (회전 실사격은 발열로 보류).
+
+## 11. T-36 Provider iconBase64 실측 (2026-10-08)
+
+- 어댑티브 벡터 아이콘 96px PNG 런타임 렌더 + base64, 실패시 "" (소비자 폴백 유지).
+- S22 조회 `iVBOR` 확인, 크래시 0.

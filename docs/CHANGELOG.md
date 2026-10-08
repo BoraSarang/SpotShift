@@ -6,6 +6,7 @@
 
 - **추가 (T-33)**: 연동 계약 v1 구현 — manifest 명찰 + `PluginProbeReceiver` + 설정 `연동 허용` + 거부 로그. dumpsys 미표시 실측으로 discovery를 프로브 방식으로 변경. S22 실검증: force-stop 상태 `[PLUGIN] version=1 ... allowed=true` 응답·크래시 0
 - **수정 (T-34)**: 속도 측정 후 최종 상태 복원 — T-30 후유증으로 `SPEED_CHECKING`에서 복귀가 없어 진행 표시 영구 노출(`계속 동작`처럼 보임). `notifySpeedFinished()`로 SUCCESS/FAILED 복원. S22 실검증: 측정 3.26Mbps 달성 후 `phase=SUCCESS` + `[REMOTE]` 결과
+- **추가 (T-36)**: Provider `iconBase64` 실측 — 어댑티브 벡터 런타임 96px PNG 렌더. S22 조회 `iVBOR` 확인
 - **추가 (T-35)**: 연동 SDK v2 L2 승격 — Provider·브로드캐스트 액션(전면 경로 제거)·주기 `[EVENT]`·직접 로그. 규칙 원천은 RelayConsole `PLUGIN_SDK.md`, 본 repo 문서는 구현 기록만
 - **수정 (T-31)**: 핫스팟 안내 개선 4점 — 설정 `핫스팟 자동 켜기`→`핫스팟 꺼짐 안내` 개명(자동 ON 불가 명시). `isHotspotEnabled` Nullable 전환(조회 실패시 꺼짐 오판→설정 멋대로 열림 방지). `restartHotspot` ERROR 폐기(데드코드 110줄 삭제). 재시도 `재시도 중 (n/3)` 하드코딩→설정값 연동. 데이터 재연결 문구 3곳 통일
 - **수정 (T-30)**: 전 단계 진행 표시 — `SPEED_CHECKING` 추가. `measure()` 전 `notifySpeedChecking()` 호출로 홈 프로그레스·Worker 포그라운드 알림·속도탭에 `속도 측정 중` 표시. 기존에는 엔진이 `SUCCESS` 찍은 뒤 조용히 측정해서 끊긴 것처럼 보이던 문제 수정

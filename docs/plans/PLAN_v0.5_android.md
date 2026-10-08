@@ -64,3 +64,9 @@ adb shell "logcat -d -s AndroidRuntime:E"             # 크래시 0건
 - `docs/PLUGIN_CONTRACT.md` — RelayConsole 플러그인 탭용. 명찰·`autorotate` 호출·`[REMOTE]` 로그·ON/OFF AND·버전 규칙.
 - 구현: manifest 명찰 3키 + `PluginProbeReceiver` + `RotationConfig.pluginAllowed` + 설정 `연동 허용` + OFF시 `[REMOTE] 거부됨 (연동 OFF)`.
 - S22 실검증: force-stop 상태에서 프로브 응답 `[PLUGIN] version=1 actions=autorotate logTag=SpotShift allowed=true`, 크래시 0.
+
+## 9. T-34 속도 측정 후 최종 상태 복원 (2026-10-08)
+
+- T-30 후유증: `SPEED_CHECKING` 진입 후 복귀 호출이 없어 홈 진행 표시 영구 노출.
+- `RotationEngine.notifySpeedFinished()` 추가, `HomeViewModel.manualRotate` 종료 시 호출.
+- S22 실검증: 측정 후 `phase=SUCCESS` + `[REMOTE]` 결과 로그.

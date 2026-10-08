@@ -220,7 +220,14 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                 lastRecord = finishManual(base, speedNote)
                 break
             }
-            lastRecord?.let(onResult)
+            // T-34 — 최종 상태 복원 (SPEED_CHECKING에서 안 돌아오면 진행 표시가 영원히 돈다)
+            lastRecord?.let { final ->
+                engine.notifySpeedFinished(
+                    final.changed,
+                    final.note ?: if (final.changed) "IP 변경 완료" else "IP 변경 실패"
+                )
+                onResult(final)
+            }
         }
     }
 

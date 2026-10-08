@@ -37,3 +37,4 @@
 | T-31 | 핫스팟 안내 개선 4점 (문구·오탐·데드코드·재시도 표기) | android | 완료(코드) | 설정 `핫스팟 꺼짐 안내` 개명·`isHotspotEnabled` Nullable(실패시 이전 표시 유지·안내 미발동)·`restartHotspot` ERROR 폐기·재시도 `attempt/total` 설정 연동·데이터재연결 문구 통일 — 기기 설치 전 |
 | T-32 | 연동 계약 v1 문서 (RelayConsole 플러그인용) | android | 완료 | `docs/PLUGIN_CONTRACT.md` — 명찰·`autorotate` 호출·`[REMOTE]` 로그 형식·ON/OFF AND·버전 규칙 |
 | T-33 | 연동 계약 v1 구현 (명찰·프로브·토글·거부) | android | 완료 | manifest 명찰 3키 + `PluginProbeReceiver`(dumpsys 미표시 실측으로 프로브 방식 채택) + 설정 `연동 허용` + OFF시 `[REMOTE] 거부됨` — S22 실검증: force-stop 상태 프로브 응답·크래시 0 |
+| T-34 | 속도 측정 후 최종 상태 복원 (진행 표시 고착 수정) | android | 완료 | T-30 후유증: `SPEED_CHECKING`에서 안 돌아와 스피너 영구 표시 → `notifySpeedFinished()`로 SUCCESS/FAILED 복원 — S22 실검증: 측정 후 `phase=SUCCESS` + `[REMOTE]` 결과 로그 |

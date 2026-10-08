@@ -171,6 +171,12 @@ class RotationWorker(appContext: Context, params: WorkerParameters) :
         prefs.addRecord(record)
         if (record.changed && record.newIp != null) {
             prefs.updateRotationMeta(System.currentTimeMillis(), record.newIp)
+            // T-35 — 연동 계약 v2 §6: 자율 동작 완료 이벤트 (소비자가 스윕에서 긁는다)
+            com.borasarang.spotshift.plugin.PluginLog.event(
+                com.borasarang.spotshift.plugin.PluginContract.eventIpChanged(
+                    record.timestamp, record.oldIp, record.newIp, record.method
+                )
+            )
         }
         val summary = if (record.changed) {
             "IP 변경 완료: ${record.oldIp ?: "-"} → ${record.newIp ?: "-"} (${record.method})"

@@ -75,4 +75,4 @@
 ## 7. 대상 플랫폼
 
 - Android 8.0+ (minSdk 26), targetSdk 35
-- 최적 환경: Android 11+ (Shizuku 무선 디버깅 가능) — S22 (Android 12+) 기준 검증
+- 최적 환경: Android 11+ (Shizuku 무선 디버깅 가능) — A90 (SM-A908N, Android 12 / API 31) 기준 검증

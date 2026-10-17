@@ -19,6 +19,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,7 +39,10 @@ import java.util.Locale
 
 @Composable
 fun HistoryScreen(contentPadding: PaddingValues) {
-    DebugLogger.feature("HistoryScreen", "표시됨")
+    // T-43 — 진입 로그는 1회만 (본문이면 재구성마다 찍혀 로그 버퍼를 잠식)
+    LaunchedEffect(Unit) {
+        DebugLogger.feature("HistoryScreen", "표시됨")
+    }
     val viewModel: HomeViewModel = viewModel()
     val records by viewModel.records.collectAsState()
     // v0.5 — 기록 초기화 확인 다이얼로그 (속도 탭과 동일 규칙)

@@ -12,6 +12,7 @@ import com.borasarang.spotshift.MainActivity
 import com.borasarang.spotshift.core.ShizukuManager
 import com.borasarang.spotshift.data.Prefs
 import com.borasarang.spotshift.scheduler.RotationSchedule
+import com.borasarang.spotshift.scheduler.WatchdogSchedule
 import kotlinx.coroutines.runBlocking
 
 /**
@@ -34,12 +35,25 @@ class BootReceiver : BroadcastReceiver() {
             runCatching {
                 RotationSchedule.enqueuePeriodic(app, config.intervalMinutes)
                 DebugLogger.feature("BootReceiver", "주기 작업 등록")
+                // T-42 — 감시 스케줄 동기화
+                runCatching {
+                    val watch = runBlocking { prefs.getSpeedWatch() }
+                    WatchdogSchedule.sync(app, true, watch, config.intervalMinutes)
+                }
             }.onFailure { e ->
                 DebugLogger.e("부팅 시 주기 작업 등록 실패", "E-AND-SRV-0001", e as? Exception)
                 notifyTapToStart(app, "SpotShift를 탭하여 시작하세요")
             }
             if (!ShizukuManager.isReady) {
                 notifyTapToStart(app, "Shizuku를 다시 시작하세요")
+            }
+            // T-39 — 부팅 시점에는 Shizuku가 미준비라 즉시 재적용 불가.
+            // 유지 토글이면 연결 시 자동 재적용되도록 예약만 로그로 남긴다.
+            val dunReserved = runBlocking {
+                prefs.getDunMaintain() && prefs.getDunOriginalTypes().isNotEmpty()
+            }
+            if (dunReserved) {
+                DebugLogger.i("[DUN] 부팅 복원 예약 — Shizuku 연결 시 자동 재적용")
             }
         }.onFailure { e ->
             DebugLogger.e("부팅 복원 실패", "E-AND-SCH-0002", e as? Exception)

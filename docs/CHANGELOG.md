@@ -4,6 +4,19 @@
 
 ## v0.5.1 — 2026-10-06 — 속도 탭 업로드 실패 수정 [android] (미릴리즈)
 
+- **수정 (T-45)**: 수동 IP 변경이 "자동 IP 변경" 토글을 켜 버리던 버그 — 홈 메인 버튼이 `HomeViewModel.setEnabled(true/false)`를 함께 호출해, 사용자가 꺼 둔 자동 주기가 수동 변경 1회마다 되살아났다 (v0.2 FGS 시작/정지 버튼의 잔재). 버튼은 일회성 `manualRotate`만 수행하고, 자동 On/Off는 설정 토글·퀵세팅 타일만 조작한다. 회전 중에는 취소 대신 비활성("IP 변경 중…") — `DataController.toggleCycle`의 disable→enable 사이에서 취소되면 모바일 데이터가 꺼진 채 남는 위험 차단. 홈에 자동 변경 상태 문구 추가. **A90 실측 통과 (TC-18)**: 설정에서 자동 OFF(`setEnabled=false (자동 주기)` + 스케줄 취소) → 홈 "IP 변경 시작" → `manualRotate 시작 (자동 주기 미변경, 현재 자동=false)` → IP `118.235.13.29→118.235.2.137` 변경 성공·속도 3.41Mbps 달성(기준 2) → 이후 `setEnabled` 로그 0건, 앱 재시작에도 `자동 IP 변경 ON` 로그 없음(= False 유지·주기 미등록), 회전 중 버튼 라벨 "IP 변경 중…" 확인, ERROR 0·크래시 0
+- **부수 정리 (A90 기준)**: `build_and_run.sh`·`scripts/spotshift_status.sh`에 A90(SM-A908N) 자동 탐색 + `-s` 명시(2대 연결 시 `more than one device` 방지), README/README.ko/landing/PRD의 검증 기기 문구를 A90으로 갱신
+- **실기기 범위 확정**: **A90(SM-A908N, Android 12 / API 31) 단독** — S22는 2026-10-11부터 검증 대상 제외 (기록만 유지)
+
+- **추가 (T-37)**: DUN 탭 (5번째 탭) — APN 목록 선택 + dun 추가/원복 (Shizuku `content` 경유, 재조회 검증, 원본 type Prefs 보관). 직접 구현이라 MIT 유지 (DunUnlocker GPL-3.0 코드 미사용, 기법만 참조). E-AND-NET-0005. A90 UI 검증: 탭 진입·목록·버튼·ERROR 0. 추가/원복 사이클은 Shizuku 서버 시작 후 실측 대기 (T-38)
+- **추가 (T-37 후속)**: 설정 Shizuku 동선 — 상태별 버튼 (미설치→`Shizuku 설치`→GitHub, 설치됨→`Shizuku 실행`→앱 실행) + `Shizuku GitHub` 링크. manifest `queries`에 Shizuku 패키지 등록 (API 30+ 가시성 누락으로 설치됨을 미설치로 보던 버그 수정). A90 실측: `Shizuku 실행`→매니저 앱 포그라운드 확인
+- **추가 (T-44)**: 권한 추상화 — `core/PrivilegedShell.kt` (인터페이스+`ShizukuShell` 어댑터), `ApnController` 전량 경유. 회전 코어는 불변 (루팅 전환 시 이관)
+- **추가 (T-39)**: DUN 부팅 유지 — `DunKeeper`(원본 보관분 dun 소실 시 재적용) + `Prefs.dunMaintain`(기본 ON) + DUN 탭 토글 + `SpotShiftApp` Shizuku 연결 시 자동 ensure + `BootReceiver` 예약 로그 + E-AND-SCH-0004. A90 UI 검증 (토글 ON·ERROR 0), 부팅 사이클 실측 대기
+- **추가 (T-40)**: 온도 가드 — `core/ThermalGuard.kt` (배터리 온도+thermal 상태, 45°C·emergency(5) 연기, 토글 OFF 시 스킵) + `RotationPhase.DEFERRED` (Worker/속도탭 라벨·홈 스피너 제외 반영) + `RotationEngine.rotate()` 진입 게이트 (코어 로직 불변) + 설정 `온도 가드` 토글 + E-AND-SCH-0003. A90 UI 검증 (토글 ON·ERROR 0) + 실사격 통과 (`[THERMAL] 36.0°C·thermal=3 defer=false`→IP 변경 성공→3.35Mbps 달성)
+- **추가 (T-41)**: 전원 감시 — `core/PowerMonitor.kt` (미충전+잔량 20% 이하 연기) + `receiver/PowerReceiver.kt` (분리 알림) + 엔진 진입 게이트 + 설정 `전원 감시` 토글 + E-AND-SCH-0005. 매니페스트 수신 불가(백그라운드 제한 실측) → `SpotShiftApp` 동적 등록으로 해결. A90 실측: 분리→알림 발행·연결 로그 확인
+- **추가 (T-42)**: 속도 감시 — `core/SpeedWatchdog.kt` (30초 패시브 측정+유휴 시 ipify 생존 확인, 평소 0바이트) + `scheduler/WatchdogWorker` (저속/생존실패 시 로테이션 트리거) + `WatchdogSchedule` (회전 주기 공유·최소 60분) + 설정 `속도 감시` 토글. A90 등록 검증 (ENQUEUED·ERROR 0), 자연 실행 대기
+- **추가 (T-43)**: 원격 상태 조회 — `scripts/spotshift_status.sh` (전원·신호·핫스팟·IP·DUN·스케줄·Shizuku·ERROR 집계, 읽기 전용). 부수 수정: 화면 진입 로그가 재구성마다 찍혀(22건/초) 로그 버퍼를 잠식하던 문제 → `LaunchedEffect` 1회로 전환 (A90 실측 0건)
+
 - **추가 (T-33)**: 연동 계약 v1 구현 — manifest 명찰 + `PluginProbeReceiver` + 설정 `연동 허용` + 거부 로그. dumpsys 미표시 실측으로 discovery를 프로브 방식으로 변경. S22 실검증: force-stop 상태 `[PLUGIN] version=1 ... allowed=true` 응답·크래시 0
 - **수정 (T-34)**: 속도 측정 후 최종 상태 복원 — T-30 후유증으로 `SPEED_CHECKING`에서 복귀가 없어 진행 표시 영구 노출(`계속 동작`처럼 보임). `notifySpeedFinished()`로 SUCCESS/FAILED 복원. S22 실검증: 측정 3.26Mbps 달성 후 `phase=SUCCESS` + `[REMOTE]` 결과
 - **추가 (T-36)**: Provider `iconBase64` 실측 — 어댑티브 벡터 런타임 96px PNG 렌더. S22 조회 `iVBOR` 확인

@@ -14,6 +14,11 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
 
+    <!-- T-37 — Shizuku 매니저 감지/실행용 패키지 가시성 (API 30+) -->
+    <queries>
+        <package android:name="moe.shizuku.privileged.api" />
+    </queries>
+
     <application
         android:name=".SpotShiftApp"
         android:allowBackup="true"
@@ -61,6 +66,11 @@
         <service
             android:name="androidx.work.impl.foreground.SystemForegroundService"
             android:foregroundServiceType="dataSync" />
+
+        <!-- T-41 — 충전기 연결/분리 알림 (매니페스트 수신 불가: 백그라운드 제한 → SpotShiftApp에서 동적 등록) -->
+        <receiver
+            android:name=".receiver.PowerReceiver"
+            android:exported="false" />
 
         <receiver
             android:name=".receiver.BootReceiver"

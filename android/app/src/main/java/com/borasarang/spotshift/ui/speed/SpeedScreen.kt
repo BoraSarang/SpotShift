@@ -310,6 +310,8 @@ private fun rotationText(phase: RotationPhase): String = when (phase) {
     RotationPhase.SPEED_CHECKING -> "속도 측정 중"
     RotationPhase.SUCCESS -> "IP 변경 완료"
     RotationPhase.FAILED -> "IP 변경 실패"
+    // T-40 — 온도 가드 연기
+    RotationPhase.DEFERRED -> "온도 임계 초과로 연기"
 }
 
 private fun formatTime(ts: Long): String =

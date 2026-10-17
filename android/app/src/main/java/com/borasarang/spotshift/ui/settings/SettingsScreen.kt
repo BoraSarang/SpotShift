@@ -25,6 +25,7 @@ import androidx.compose.material3.Text
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -44,20 +45,33 @@ import com.borasarang.spotshift.ui.home.HomeViewModel
 
 @Composable
 fun SettingsScreen(contentPadding: PaddingValues) {
-    DebugLogger.feature("SettingsScreen", "표시됨")
+    // T-43 — 진입 로그는 1회만 (본문이면 재구성마다 찍혀 로그 버퍼를 잠식)
+    LaunchedEffect(Unit) {
+        DebugLogger.feature("SettingsScreen", "표시됨")
+    }
     val viewModel: HomeViewModel = viewModel()
     val config by viewModel.config.collectAsState()
     // v0.4 — Shizuku 상태 구독 (스냅샷 고착 수정)
     val shizukuReady by viewModel.shizukuReady.collectAsState()
     val batteryUnrestricted by viewModel.batteryUnrestricted.collectAsState()
+    // T-40 — 온도 가드 토글
+    val thermalGuard by viewModel.thermalGuard.collectAsState()
+    // T-41 — 전원 감시 토글
+    val powerGuard by viewModel.powerGuard.collectAsState()
+    // T-42 — 속도 감시 토글
+    val speedWatch by viewModel.speedWatch.collectAsState()
     val context = LocalContext.current
 
     // v0.4 — 시스템 설정에서 돌아오면 배터리 상태 갱신
+    // T-37 — Shizuku 설치 상태도 함께 갱신
     DisposableEffect(Unit) {
         val lifecycle = (context as? ComponentActivity)?.lifecycle
         if (lifecycle == null) return@DisposableEffect onDispose { }
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) viewModel.refreshBatteryState()
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.refreshBatteryState()
+                viewModel.refreshShizukuInstalled()
+            }
         }
         lifecycle.addObserver(observer)
         onDispose { lifecycle.removeObserver(observer) }
@@ -89,29 +103,49 @@ fun SettingsScreen(contentPadding: PaddingValues) {
             shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.surface
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text(
-                    text = if (shizukuReady) "연결됨" else "연결 필요",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = if (shizukuReady) {
-                        MaterialTheme.colorScheme.secondary
-                    } else {
-                        MaterialTheme.colorScheme.error
-                    },
-                    modifier = Modifier.weight(1f)
-                )
-                OutlinedButton(onClick = {
-                    DebugLogger.feature("SettingsScreen", "Shizuku 권한 요청")
-                    viewModel.requestShizukuPermission()
-                }) {
-                    Text("권한 요청")
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = if (shizukuReady) "연결됨" else "연결 필요",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = if (shizukuReady) {
+                            MaterialTheme.colorScheme.secondary
+                        } else {
+                            MaterialTheme.colorScheme.error
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                    // T-37 — 상태별 동작: 미설치→GitHub 설치, 설치됨→앱 실행, 연결됨→버튼 없음
+                    if (!shizukuReady) {
+                        if (viewModel.shizukuInstalled) {
+                            OutlinedButton(onClick = {
+                                DebugLogger.feature("SettingsScreen", "Shizuku 앱 실행")
+                                viewModel.openShizuku()
+                            }) {
+                                Text("Shizuku 실행")
+                            }
+                        } else {
+                            OutlinedButton(onClick = {
+                                DebugLogger.feature("SettingsScreen", "Shizuku 설치 안내")
+                                viewModel.openShizuku()
+                            }) {
+                                Text("Shizuku 설치")
+                            }
+                        }
+                    }
                 }
+                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                AboutRow(
+                    label = "Shizuku GitHub",
+                    value = "github.com/RikkaApps/Shizuku",
+                    onClick = {
+                        viewModel.openShizukuGithub()
+                    }
+                )
             }
         }
 
@@ -296,6 +330,66 @@ fun SettingsScreen(contentPadding: PaddingValues) {
                 }
                 Text(
                     "모바일 데이터 재연결로 IP 변경 실패 시 에어플레인을 사용합니다. 핫스팟이 꺼질 수 있습니다.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                // T-40 — 온도 가드 (임계 초과 시 연기)
+                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("온도 가드", style = MaterialTheme.typography.bodyLarge)
+                    Switch(
+                        checked = thermalGuard,
+                        onCheckedChange = { value ->
+                            viewModel.updateThermalGuard(value)
+                        }
+                    )
+                }
+                Text(
+                    "기기 온도가 임계(배터리 45°C·thermal emergency)를 넘으면 이번 회차를 연기하고 기록합니다.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                // T-41 — 전원 감시 (충전기 분리 알림 + 저잔량 미충전 시 연기)
+                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("전원 감시", style = MaterialTheme.typography.bodyLarge)
+                    Switch(
+                        checked = powerGuard,
+                        onCheckedChange = { value ->
+                            viewModel.updatePowerGuard(value)
+                        }
+                    )
+                }
+                Text(
+                    "충전기 분리 시 알립니다. 충전 없이 잔량 20% 이하면 이번 회차를 연기합니다.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                // T-42 — 속도 감시 (주기 외 저속 트리거, 절약 모드)
+                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("속도 감시", style = MaterialTheme.typography.bodyLarge)
+                    Switch(
+                        checked = speedWatch,
+                        onCheckedChange = { value ->
+                            viewModel.updateSpeedWatch(value)
+                        }
+                    )
+                }
+                Text(
+                    "회전 주기마다 실사용량을 30초 측정해 기준 미달이면 자동 변경합니다. 평소 데이터 소비는 0입니다.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

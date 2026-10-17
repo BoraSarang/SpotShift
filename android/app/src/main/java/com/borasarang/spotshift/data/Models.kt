@@ -52,7 +52,9 @@ enum class RotationPhase {
     FALLBACK_AIRPLANE,
     SPEED_CHECKING,
     SUCCESS,
-    FAILED
+    FAILED,
+    // T-40 — 온도 가드 연기 (종료 상태, 스피너 대상 아님)
+    DEFERRED
 }
 
 data class RotationState(

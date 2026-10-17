@@ -2,6 +2,7 @@ package com.borasarang.spotshift.ui.home
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Router
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Speed
 import androidx.compose.material.icons.outlined.WifiTethering
@@ -27,6 +28,8 @@ fun SpotShiftRoot() {
         stringResource(R.string.tab_status) to Icons.Outlined.WifiTethering,
         stringResource(R.string.tab_history) to Icons.Outlined.History,
         stringResource(R.string.tab_speed) to Icons.Outlined.Speed,
+        // T-37 — DUN 탭 (APN 선택 + dun 추가/원복)
+        stringResource(R.string.tab_dun) to Icons.Outlined.Router,
         stringResource(R.string.tab_settings) to Icons.Outlined.Settings
     )
 
@@ -48,6 +51,7 @@ fun SpotShiftRoot() {
             0 -> HomeScreen(contentPadding = innerPadding)
             1 -> HistoryScreen(contentPadding = innerPadding)
             2 -> com.borasarang.spotshift.ui.speed.SpeedScreen(contentPadding = innerPadding)
+            3 -> com.borasarang.spotshift.ui.dun.DunScreen(contentPadding = innerPadding)
             else -> SettingsScreen(contentPadding = innerPadding)
         }
     }

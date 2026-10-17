@@ -20,6 +20,7 @@ import com.borasarang.spotshift.data.RotationConfig
 import com.borasarang.spotshift.data.RotationRecord
 import com.borasarang.spotshift.data.RotationState
 import com.borasarang.spotshift.scheduler.RotationSchedule
+import com.borasarang.spotshift.scheduler.WatchdogSchedule
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -122,6 +123,60 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
 
     companion object {
         private const val SHIZUKU_PACKAGE = "moe.shizuku.privileged.api"
+        private const val SHIZUKU_GITHUB = "https://github.com/RikkaApps/Shizuku"
+    }
+
+    // T-37 — Shizuku 매니저 설치 여부 (설정 화면 버튼 분기용)
+    var shizukuInstalled: Boolean by mutableStateOf(isShizukuInstalled())
+        private set
+
+    fun refreshShizukuInstalled() {
+        shizukuInstalled = isShizukuInstalled()
+    }
+
+    private fun isShizukuInstalled(): Boolean = runCatching {
+        getApplication<Application>().packageManager.getPackageInfo(SHIZUKU_PACKAGE, 0)
+        true
+    }.getOrDefault(false)
+
+    /**
+     * T-37 — Shizuku 실행 또는 설치 유도.
+     * 설치됨 → Shizuku 앱 실행(서버 시작 유도), 미설치 → GitHub 페이지로 이동.
+     */
+    fun openShizuku() {
+        val app = getApplication<Application>()
+        if (isShizukuInstalled()) {
+            DebugLogger.feature("HomeViewModel", "Shizuku 앱 실행")
+            runCatching {
+                val launch = app.packageManager
+                    .getLaunchIntentForPackage(SHIZUKU_PACKAGE)
+                    ?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                if (launch != null) app.startActivity(launch)
+            }.onFailure {
+                DebugLogger.e("Shizuku 앱 실행 실패", "E-AND-PERM-0002", it as? Exception)
+            }
+            return
+        }
+        DebugLogger.feature("HomeViewModel", "Shizuku 미설치 — GitHub로 이동")
+        runCatching {
+            app.startActivity(
+                Intent(Intent.ACTION_VIEW, android.net.Uri.parse(SHIZUKU_GITHUB))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+        }
+    }
+
+    /**
+     * T-37 — Shizuku GitHub 페이지를 브라우저로 연다 (설치 여부 무관).
+     */
+    fun openShizukuGithub() {
+        DebugLogger.feature("HomeViewModel", "Shizuku GitHub 열기")
+        runCatching {
+            getApplication<Application>().startActivity(
+                Intent(Intent.ACTION_VIEW, android.net.Uri.parse(SHIZUKU_GITHUB))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+        }
     }
 
     // v0.4 — Shizuku 서비스 사망 시 권한 요청이 무응답이던 문제 수정:
@@ -140,16 +195,27 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         return ShizukuManager.requestPermission()
     }
 
+    /**
+     * 자동 IP 변경(주기 스케줄) On/Off — 설정 탭 토글과 퀵세팅 타일 전용.
+     *
+     * T-45 — 홈의 "IP 변경 시작" 버튼은 일회성 manualRotate만 수행하며 이 함수를 호출하지 않는다.
+     * (v0.5 WorkManager 이관 전에는 버튼이 FGS 시작/정지 버튼이었고, 그 잔재로 수동 변경 시
+     *  사용자가 꺼 둔 자동 변경이 되살아났다.)
+     */
     fun setEnabled(enabled: Boolean) {
         viewModelScope.launch {
             prefs.updateEnabled(enabled)
             // v0.5 — 자동 IP 변경 토글이 WorkManager 주기 라이프사이클을 제어 (구 FGS 서비스 대체)
             if (enabled) {
-                RotationSchedule.enqueuePeriodic(getApplication(), prefs.getConfig().intervalMinutes)
+                val cfg = prefs.getConfig()
+                RotationSchedule.enqueuePeriodic(getApplication(), cfg.intervalMinutes)
+                // T-42 — 감시 스케줄 동기화
+                WatchdogSchedule.sync(getApplication(), true, prefs.getSpeedWatch(), cfg.intervalMinutes)
             } else {
                 RotationSchedule.cancel(getApplication())
+                WatchdogSchedule.cancel(getApplication())
             }
-            DebugLogger.feature("HomeViewModel", "setEnabled=$enabled")
+            DebugLogger.feature("HomeViewModel", "setEnabled=$enabled (자동 주기)")
         }
     }
 
@@ -157,7 +223,12 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     fun updateIntervalMinutes(v: Int) = launchUpdate {
         prefs.updateIntervalMinutes(v)
         // v0.5 — 주기 변경 시 다음 실행부터 반영되도록 재등록 (토글 ON일 때만)
-        if (prefs.getConfig().enabled) RotationSchedule.enqueuePeriodic(getApplication(), v)
+        val cfg = prefs.getConfig()
+        if (cfg.enabled) {
+            RotationSchedule.enqueuePeriodic(getApplication(), v)
+            // T-42 — 감시 주기도 공유 (최소 60분)
+            WatchdogSchedule.sync(getApplication(), true, prefs.getSpeedWatch(), v)
+        }
     }
     fun updateRetryCount(v: Int) = launchUpdate { prefs.updateRetryCount(v) }
     fun updateFallback(v: Boolean) = launchUpdate { prefs.updateFallback(v) }
@@ -168,6 +239,22 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     fun updateEventAlert(v: Boolean) = launchUpdate { prefs.updateEventAlert(v) }
     // T-33 — 연동 계약 v1: 외부 원격 요청 허용 토글
     fun updatePluginAllowed(v: Boolean) = launchUpdate { prefs.updatePluginAllowed(v) }
+    // T-40 — 온도 가드 토글
+    val thermalGuard: StateFlow<Boolean> = prefs.thermalGuardFlow
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    fun updateThermalGuard(v: Boolean) = launchUpdate { prefs.updateThermalGuard(v) }
+    // T-41 — 전원 감시 토글
+    val powerGuard: StateFlow<Boolean> = prefs.powerGuardFlow
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    fun updatePowerGuard(v: Boolean) = launchUpdate { prefs.updatePowerGuard(v) }
+    // T-42 — 속도 감시 토글 (변경 시 감시 스케줄 동기화)
+    val speedWatch: StateFlow<Boolean> = prefs.speedWatchFlow
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    fun updateSpeedWatch(v: Boolean) = launchUpdate {
+        prefs.updateSpeedWatch(v)
+        val cfg = prefs.getConfig()
+        WatchdogSchedule.sync(getApplication(), cfg.enabled, v, cfg.intervalMinutes)
+    }
 
     private fun launchUpdate(block: suspend () -> Unit) {
         viewModelScope.launch { block() }
@@ -182,6 +269,11 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             // config.value 금지: 콜드스타트 직후에는 DataStore 첫 방출 전이라
             // 초기값(알림=true)이 들어있어 꺼져 있는데도 울린다. 반드시 fresh read.
             val cfg = prefs.getConfig()
+            // T-45 — 수동 회전은 자동 주기 토글(enabled)을 바꾸지 않는다 (검증 로그)
+            DebugLogger.feature(
+                "HomeViewModel",
+                "manualRotate 시작 (자동 주기 미변경, 현재 자동=${cfg.enabled})"
+            )
             // 변경 후 검증: 기준 미달이면 재변경, 달성/최대 반복 시 종료 (건너뛰기 없음)
             val threshold = cfg.speedThresholdMbps
             val maxAttempts = cfg.speedMaxRechecks.coerceAtLeast(1)

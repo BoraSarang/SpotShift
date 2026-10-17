@@ -81,7 +81,9 @@ class RotationEngine(
         // 진단용: 엔진이 실제로 본 설정값 (알림 몰래켜짐 추적용)
         DebugLogger.i("[CFG] 기준=${config.speedThresholdMbps}Mbps 알림=${config.eventAlertEnabled} 최대반복=${config.speedMaxRechecks}")
         // v0.4 — 시작 알림은 상태 알림이 phase로 표시하므로 별도 발행 없음 (단일 알림)
-        val record = rotateInternal(config)
+        // T-40 — 온도 가드 연기 (코어 로직 불변, 진입 게이트만 추가)
+        // T-41 — 전원 가드 연기 (미충전 + 저잔량)
+        val record = thermalDefer() ?: powerDefer() ?: rotateInternal(config)
         // v0.2 — 요구사항 5: 핫스팟 꺼짐 안내 옵션 확인 (회전 성공/실패 무관)
         // T-31: 조회 실패(null)는 꺼짐으로 오판 금지 — 확정 false일 때만 안내
         if (config.hotspotAutoEnable && hotspotController.isHotspotEnabled() == false) {
@@ -90,6 +92,51 @@ class RotationEngine(
         }
         onRotationCompletedNotify?.invoke(record)
         record
+    }
+
+    /**
+     * T-40 — 온도 가드 연기 검사. 연기면 기록용 RotationRecord 반환, 아니면 null.
+     * 네트워크 I/O 없이 로컬 센서값만 읽으므로 가볍다.
+     */
+    private suspend fun thermalDefer(): RotationRecord? {
+        val snapshot = ThermalGuard(context).snapshot()
+        if (!snapshot.defer) return null
+        DebugLogger.e("온도 임계 초과로 연기 (${snapshot.reason()})", "E-AND-SCH-0003")
+        update {
+            copy(
+                phase = RotationPhase.DEFERRED,
+                message = "온도 임계 초과로 연기",
+                errorCode = "E-AND-SCH-0003"
+            )
+        }
+        return RotationRecord(
+            changed = false,
+            method = RotationRecord.METHOD_NONE,
+            note = "온도 임계 초과로 연기 (${snapshot.reason()})",
+            errorCode = "E-AND-SCH-0003"
+        )
+    }
+
+    /**
+     * T-41 — 전원 가드 연기 검사. 미충전 + 저잔량이면 연기, 아니면 null.
+     */
+    private suspend fun powerDefer(): RotationRecord? {
+        val snapshot = PowerMonitor(context).snapshot()
+        if (!snapshot.defer) return null
+        DebugLogger.e("배터리 부족으로 연기 (${snapshot.reason()})", "E-AND-SCH-0005")
+        update {
+            copy(
+                phase = RotationPhase.DEFERRED,
+                message = "배터리 부족으로 연기",
+                errorCode = "E-AND-SCH-0005"
+            )
+        }
+        return RotationRecord(
+            changed = false,
+            method = RotationRecord.METHOD_NONE,
+            note = "배터리 부족으로 연기 (${snapshot.reason()})",
+            errorCode = "E-AND-SCH-0005"
+        )
     }
 
     private suspend fun rotateInternal(config: RotationConfig): RotationRecord {

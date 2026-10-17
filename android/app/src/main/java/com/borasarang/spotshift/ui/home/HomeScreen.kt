@@ -46,7 +46,10 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun HomeScreen(contentPadding: PaddingValues) {
-    DebugLogger.feature("HomeScreen", "표시됨")
+    // T-43 — 진입 로그는 1회만 (본문이면 재구성마다 찍혀 로그 버퍼를 잠식)
+    LaunchedEffect(Unit) {
+        DebugLogger.feature("HomeScreen", "표시됨")
+    }
     val viewModel: HomeViewModel = viewModel()
     val config by viewModel.config.collectAsState()
     val context = LocalContext.current
@@ -101,7 +104,8 @@ fun HomeScreen(contentPadding: PaddingValues) {
     }
 
     val rotationState = viewModel.rotationState
-    val running = rotationState.phase !in listOf(RotationPhase.IDLE, RotationPhase.SUCCESS, RotationPhase.FAILED)
+    // T-40 — DEFERRED는 종료 상태 (스피너 대상 아님)
+    val running = rotationState.phase !in listOf(RotationPhase.IDLE, RotationPhase.SUCCESS, RotationPhase.FAILED, RotationPhase.DEFERRED)
     // v0.4 — Shizuku 상태 구독 (스냅샷 고착 수정)
     val shizukuReady by viewModel.shizukuReady.collectAsState()
     val lastSpeed by viewModel.lastSpeed.collectAsState()
@@ -216,6 +220,21 @@ fun HomeScreen(contentPadding: PaddingValues) {
                 )
             }
         }
+        // T-45 — 자동 변경 상태를 홈에서 확인 가능하게 (수동 버튼은 더 이상 토글을 건드리지 않음)
+        Text(
+            text = if (config.enabled) {
+                "자동 IP 변경 켜짐 · 설정에서 끄기"
+            } else {
+                "자동 IP 변경 꺼짐 · 설정에서 켤 수 있음"
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = if (config.enabled) {
+                MaterialTheme.colorScheme.secondary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
+            modifier = Modifier.padding(bottom = 4.dp)
+        )
         // 변경 규칙 안내 (주기·기준·최대 반복 — 설정과 연동)
         val intervalLabel = if (config.intervalMinutes % 60 == 0) {
             "${config.intervalMinutes / 60}시간마다"
@@ -228,6 +247,8 @@ fun HomeScreen(contentPadding: PaddingValues) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 8.dp)
         )
+        // T-45 — 이 버튼은 일회성 수동 변경 전용이다. "자동 IP 변경" 토글(setEnabled)은
+        // 설정 탭과 퀵세팅 타일만 조작한다 (v0.5 WorkManager 이관 후 남아 있던 결합 제거).
         MainActionButton(
             enabled = shizukuReady,
             running = running,
@@ -236,10 +257,7 @@ fun HomeScreen(contentPadding: PaddingValues) {
                 if (!shizukuReady) {
                     DebugLogger.feature("HomeScreen", "메인 버튼 권한 요청")
                     viewModel.requestShizukuPermission()
-                } else if (running) {
-                    viewModel.setEnabled(false)
                 } else {
-                    viewModel.setEnabled(true)
                     viewModel.manualRotate { record ->
                         publicIp = record.newIp ?: publicIp
                     }

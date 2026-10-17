@@ -57,6 +57,76 @@ class Prefs(private val context: Context) {
     // T-33 — 연동 계약 v1: 외부 원격 요청 허용
     suspend fun updatePluginAllowed(v: Boolean) = editKey { it[KEY_PLUGIN_ALLOWED] = v }
 
+    // T-37 — DUN 원복용 원본 APN type 보관 (id → type JSON)
+    suspend fun getDunOriginalTypes(): Map<String, String> {
+        val raw = context.dataStore.data.first()[KEY_DUN_ORIGINAL] ?: return emptyMap()
+        return runCatching {
+            com.google.gson.Gson().fromJson(raw, Map::class.java)
+                .mapKeys { it.key.toString() }
+                .mapValues { it.value.toString() }
+        }.getOrDefault(emptyMap())
+    }
+
+    suspend fun saveDunOriginalType(apnId: Long, type: String) {
+        val updated = getDunOriginalTypes().toMutableMap()
+        // 최초 원본만 보관 (덮어쓰기 금지 — 원복 기준이 오염됨)
+        if (!updated.containsKey(apnId.toString())) {
+            updated[apnId.toString()] = type
+            editKey { it[KEY_DUN_ORIGINAL] = com.google.gson.Gson().toJson(updated) }
+            DebugLogger.feature("Prefs", "DUN 원본 보관 id=$apnId")
+        }
+    }
+
+    suspend fun clearDunOriginalType(apnId: Long) {
+        val updated = getDunOriginalTypes().toMutableMap()
+        if (updated.remove(apnId.toString()) != null) {
+            editKey {
+                if (updated.isEmpty()) it.remove(KEY_DUN_ORIGINAL)
+                else it[KEY_DUN_ORIGINAL] = com.google.gson.Gson().toJson(updated)
+            }
+            DebugLogger.feature("Prefs", "DUN 원본 삭제 id=$apnId")
+        }
+    }
+
+    // T-39 — DUN 유지 (Shizuku 연결 시 자동 재적용)
+    val dunMaintainFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_DUN_MAINTAIN] ?: true
+    }
+    suspend fun getDunMaintain(): Boolean =
+        context.dataStore.data.first()[KEY_DUN_MAINTAIN] ?: true
+
+    suspend fun updateDunMaintain(v: Boolean) = editKey { it[KEY_DUN_MAINTAIN] = v }
+
+    // T-40 — 온도 가드 토글
+    val thermalGuardFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_THERMAL_GUARD] ?: true
+    }
+
+    suspend fun getThermalGuard(): Boolean =
+        context.dataStore.data.first()[KEY_THERMAL_GUARD] ?: true
+
+    suspend fun updateThermalGuard(v: Boolean) = editKey { it[KEY_THERMAL_GUARD] = v }
+
+    // T-41 — 전원 감시 토글
+    val powerGuardFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_POWER_GUARD] ?: true
+    }
+
+    suspend fun getPowerGuard(): Boolean =
+        context.dataStore.data.first()[KEY_POWER_GUARD] ?: true
+
+    suspend fun updatePowerGuard(v: Boolean) = editKey { it[KEY_POWER_GUARD] = v }
+
+    // T-42 — 속도 감시 토글
+    val speedWatchFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_SPEED_WATCH] ?: true
+    }
+
+    suspend fun getSpeedWatch(): Boolean =
+        context.dataStore.data.first()[KEY_SPEED_WATCH] ?: true
+
+    suspend fun updateSpeedWatch(v: Boolean) = editKey { it[KEY_SPEED_WATCH] = v }
+
     private suspend fun editKey(block: (androidx.datastore.preferences.core.MutablePreferences) -> Unit) {
         context.dataStore.edit(block)
         DebugLogger.feature("Prefs", "키 저장됨")
@@ -195,6 +265,16 @@ class Prefs(private val context: Context) {
         private val KEY_LAST_TICK = longPreferencesKey("last_schedule_tick_at")
         // v0.5 (T-27) — 속도 탭 측정 기록
         private val KEY_SPEED_RECORDS = stringPreferencesKey("speed_records_json")
+        // T-37 — DUN 원복용 원본 APN type 보관
+        private val KEY_DUN_ORIGINAL = stringPreferencesKey("dun_original_types_json")
+        // T-39 — DUN 유지 토글
+        private val KEY_DUN_MAINTAIN = booleanPreferencesKey("dun_maintain")
+        // T-40 — 온도 가드 토글
+        private val KEY_THERMAL_GUARD = booleanPreferencesKey("thermal_guard")
+        // T-41 — 전원 감시 토글
+        private val KEY_POWER_GUARD = booleanPreferencesKey("power_guard")
+        // T-42 — 속도 감시 토글
+        private val KEY_SPEED_WATCH = booleanPreferencesKey("speed_watch")
 
         private const val MAX_RECORDS = 200
         // v0.5 (T-27) — 속도 기록 최대 보관

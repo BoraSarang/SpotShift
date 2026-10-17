@@ -4,28 +4,30 @@
 
 ## 1. 환경 (검증 완료)
 
-- 테스트 기기: **삼성 갤럭시 S22** (USB 디버깅, 개발자 옵션 활성화)
+- **테스트 기기: 삼성 갤럭시 A90 (SM-A908N, Android 12 / API 31) 단독** — 무선 ADB `192.168.86.30:5555`. 2026-10-11부터 **S22는 검증 대상 제외** (과거 기록만 참고)
 - JDK: `/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home` (brew openjdk@17)
 - Gradle: wrapper 8.9 (반드시 `./gradlew` 사용)
 - Android SDK: `~/Library/Android/sdk` (`android/local.properties`에 sdk.dir 기록)
 - (보조) AVD 시스템 이미지: android-37.1 / google_apis_ps16k / arm64-v8a — 필요 시 생성 `spotshift_test`
+- **기기 2대가 동시에 연결될 수 있음** (A90 86.30 / S22 86.49) → 모든 adb 명령에 `-s 192.168.86.30:5555`를 명시한다 (생략 시 `more than one device` 오류)
 
 ## 2. 빌드/실행 명령
 
 ```
 export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home
 cd android && ./gradlew assembleDebug --no-daemon
-adb install -r app/build/outputs/apk/debug/app-debug.apk
-adb shell am start -n com.borasarang.spotshift/.MainActivity
-adb shell "logcat -d -s SpotShift:*"          # 앱 로그 (DebugLogger)
-adb shell "logcat -d -s AndroidRuntime:E"     # 크래시 확인
-adb exec-out screencap -p > /tmp/spotshift.png # 스크린샷
+A=192.168.86.30:5555                            # A90 단독 (기기 2대 연결 시 -s 필수)
+adb -s $A install -r app/build/outputs/apk/debug/app-debug.apk
+adb -s $A shell am start -n com.borasarang.spotshift/.MainActivity
+adb -s $A shell "logcat -d -s SpotShift:*"          # 앱 로그 (DebugLogger)
+adb -s $A shell "logcat -d -s AndroidRuntime:E"     # 크래시 확인
+adb -s $A exec-out screencap -p > /tmp/spotshift.png # 스크린샷
 ```
 
 ## 3. 권한 구조 (Shizuku 기반)
 
 - **Shizuku** (무루트): ADB 권한으로 `settings put global airplane_mode_on` + `AIRPLANE_MODE` 브로드캐스트 실행, TetheringManager 리플렉션 호출
-- Shizuku 시작: S22 USB 연결 시 `adb`로 시작 가능. 앱 내 가이드 제공
+- Shizuku 시작: A90 연결 상태에서 `adb`로 시작 가능 (무선 디버깅 유지 시 재부팅 후에도 무선). 앱 내 가이드 제공
 - 앱 권한: `INTERNET`, `ACCESS_NETWORK_STATE`, `ACCESS_WIFI_STATE`, `POST_NOTIFICATIONS`, `FOREGROUND_SERVICE`, `WRITE_SETTINGS`(airplane용, 최소화)
 
 ## 4. IP 변경 메커니즘
@@ -47,7 +49,9 @@ adb exec-out screencap -p > /tmp/spotshift.png # 스크린샷
 
 ## 6. 실기기 검증 기록
 
-- (T-3 진행 후 작성 예정)
+- 검증 기기: **A90 (SM-A908N, Android 12 / API 31) 단독** (2026-10-11~). S22 기록은 이력.
+- v0.6~v0.7 (T-37~T-44): DUN 탭·Shizuku 동선·온도/전원 가드·속도 감시·상태 스크립트 — A90 실측 (`docs/CHANGELOG.md`, `docs/plans/PLAN_v0.7_android.md` TC-12~17)
+- v0.5.1 (T-45): 수동 변경의 자동 토글 결합 제거 — **A90 실측 통과 (TC-18, 2026-10-17)**: OFF 상태 유지 + 주기 미등록 + IP 변경/속도 달성 + ERROR 0
 
 ## 7. 금지사항
 

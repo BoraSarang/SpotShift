@@ -1,6 +1,8 @@
 # AGENTS.md — SpotShift (핫스팟 IP 자동 변경기)
 
 Android 단독 네이티브 앱 (Kotlin + Compose, 무루트/Shizuku, 서버 없음). minSdk 26 / targetSdk 35.
+
+- **실기기 범위: A90 (SM-A908N, Android 12 / API 31) 단독.** S22(SM-S901N)는 2026-10-11부터 검증 대상 제외 — 과거 기록만 참고. 빌드·설치·logcat 검증은 A90(`adb -s 192.168.86.30:5555`) 기준으로 한다.
 상세 환경·실기기 절차는 `AGENTS.android.md`, 작업 상태는 `docs/TODO.md` + `docs/CHANGELOG.md`가 진실원천 (이 파일에 상태 복제 금지).
 
 ## 명령 (Gradle 루트는 `android/`)
@@ -15,20 +17,23 @@ adb shell "logcat -d -s SpotShift:*"       # 앱 로그 (DebugLogger, TAG=SpotSh
 adb shell "logcat -d -s AndroidRuntime:E"   # 크래시 확인
 ```
 
-- 루트 `./build_and_run.sh`는 위 절차의 디스패처. `scripts/`는 비어 있음.
-- 테스트·CI·lint 없음. 검증 = `assembleDebug` 성공 + S22 설치 + logcat ERROR 0.
+- 루트 `./build_and_run.sh`는 위 절차의 디스패처 (A90 자동 탐색 + `-s` 명시). `scripts/spotshift_status.sh` = A90 상태 원격 조회(읽기 전용).
+- 테스트·CI·lint 없음. 검증 = `assembleDebug` 성공 + A90 설치 + logcat ERROR 0.
 
 ## 구조 (`android/app/src/main/java/com/borasarang/spotshift/`)
 
 - 진입: `SpotShiftApp.kt` (토글 ON이면 주기 작업 등록) → `MainActivity.kt` → 수동 변경은 `HomeViewModel.manualRotate` (인프로세스)
 - 핵심: `scheduler/RotationWorker.kt` (주기 틱→expedited 1회 실행→`core/RotationEngine.kt` 오케스트레이션) + `scheduler/RotationSchedule.kt` (등록/취소 단일 진입점) + `scheduler/Conditions.kt` (셀룰러만 실행 관문, 나머지는 기록용)
-- 수단 우선순위 (S22 실측 확정): `core/DataController.kt` (`svc data` 재연결) → `core/AirplaneController.kt` (`cmd connectivity airplane-mode`) 폴백. 검증은 `core/IpVerifier.kt` (ipify) + `core/SpeedChecker.kt` (변경 후 측정, 기준 미달 시 최대 3회 재변경)
-- 상태: `data/Prefs.kt` (DataStore, 키별 `update*` — 통째 save 금지, 콜드스타트 fresh read) / `receiver/BootReceiver.kt` (재부팅 복원) / `ui/` (Compose Material3 4탭: home/history/speed/settings)
+- 수단 우선순위 (최초 S22 실측 → A90 운영 확인): `core/DataController.kt` (`svc data` 재연결) → `core/AirplaneController.kt` (`cmd connectivity airplane-mode`) 폴백. 검증은 `core/IpVerifier.kt` (ipify) + `core/SpeedChecker.kt` (변경 후 측정, 기준 미달 시 최대 3회 재변경)
+- 상태: `data/Prefs.kt` (DataStore, 키별 `update*` — 통째 save 금지, 콜드스타트 fresh read) / `receiver/BootReceiver.kt` (재부팅 복원) / `ui/` (Compose Material3 5탭: home/history/speed/dun/settings)
 - 루트 `index.html`은 GitHub Pages 랜딩, 앱 코드 아님.
 
-## S22 / API 36 제약 (재발 방지)
+## 실기기 / API 제약 (A90 전용)
 
-- `am broadcast AIRPLANE_MODE` (exit=255), TetheringManager 리플렉션·`cmd wifi start-softap` (`TETHER_PRIVILEGED`) 전부 차단 → 위 우회 명령만 사용.
+> A90(SM-A908N) = **검증 기기 단독**. 아래 S22 실측 항목은 이력(참고)이며, 신규 검증은 A90에서만 한다.
+> A90은 SDK 31이라 Shizuku 셸 명령(`svc data`, `cmd connectivity airplane-mode`) 경로가 S22(API 36)보다 제약이 적다 — 실측 기록은 `docs/CHANGELOG.md` 참조.
+
+- `am broadcast AIRPLANE_MODE` (exit=255), TetheringManager 리플렉션·`cmd wifi start-softap` (`TETHER_PRIVILEGED`) 전부 차단 → 위 우회 명령만 사용. (S22/API 36 실측 이력)
 - 핫스팟 SSID/비밀번호 영구 변경 금지 (복원만). 일반 권한으로 핫스팟 직접 제어 시도 금지.
 - 삼성 One UI는 백그라운드 킬 가능 → 포그라운드 서비스 + 배터리 예외 안내 유지. 상태알림 채널은 `setShowBadge(false)` (NotificationChannel 전용 API).
 

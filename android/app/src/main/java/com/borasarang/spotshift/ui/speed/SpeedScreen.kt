@@ -1,6 +1,8 @@
 package com.borasarang.spotshift.ui.speed
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -9,10 +11,22 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ArrowForward
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.PlayArrow
+import androidx.compose.material.icons.outlined.Speed
+import androidx.compose.material.icons.outlined.Stop
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -27,15 +41,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.borasarang.spotshift.core.NetInfo
 import com.borasarang.spotshift.data.RotationPhase
-import com.borasarang.spotshift.ui.components.formatMbps
+import com.borasarang.spotshift.data.SpeedRecord
 import com.borasarang.spotshift.ui.components.formatRate
 import com.borasarang.spotshift.ui.theme.LocalSpotColors
+import com.borasarang.spotshift.ui.theme.full
 
 /**
- * v0.5 (T-27) — 속도 탭. fast.com식 실시간 측정 + 미달 시 즉시 IP 변경 → 재측정 비교.
+ * T-49 — 속도 화면. 목업 `?screen=speed` 기준:
+ * 숫자 히어로(다운로드) + 업로드·지연 2열 → 측정 액션 → 전/후 비교 카드 → 측정 기록 리스트.
+ * 측정/변경 동작(ViewModel)은 그대로 유지하고 표시 계층만 재구성했다.
  */
 @Composable
 fun SpeedScreen(contentPadding: PaddingValues) {
@@ -50,236 +69,180 @@ fun SpeedScreen(contentPadding: PaddingValues) {
         if (vm.phase == SpeedViewModel.Phase.IDLE) net = vm.currentNet()
     }
 
+    val testing = vm.phase == SpeedViewModel.Phase.TESTING ||
+        vm.phase == SpeedViewModel.Phase.CHANGING
+    val measured = vm.downMbps
+    val threshold = config.speedThresholdMbps
+    val below = measured != null && measured < threshold
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(contentPadding)
             .verticalScroll(rememberScrollState())
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(horizontal = 16.dp, vertical = 16.dp)
     ) {
-        Row(modifier = Modifier.fillMaxWidth()) {
-            Text("속도", style = MaterialTheme.typography.headlineMedium)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("속도", style = MaterialTheme.typography.headlineMedium)
+                Text(
+                    text = "현재 접속 · ${net.current}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            when {
+                testing -> SpeedBadge(
+                    label = "측정 중",
+                    container = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    content = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                measured != null && below -> SpeedBadge(
+                    label = "기준 미달",
+                    container = MaterialTheme.colorScheme.errorContainer,
+                    content = MaterialTheme.colorScheme.onErrorContainer
+                )
+                measured != null -> SpeedBadge(
+                    label = "기준 달성",
+                    container = LocalSpotColors.current.successContainer,
+                    content = LocalSpotColors.current.onSuccessContainer
+                )
+            }
         }
 
         Spacer(Modifier.height(16.dp))
-        // 접속 상태
-        Surface(shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceContainerLow) {
-            Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
-                Text("현재 접속: ${net.current}", style = MaterialTheme.typography.titleMedium)
+        SpeedHeroCard(
+            testing = testing,
+            liveMbps = vm.liveMbps,
+            downMbps = measured,
+            upMbps = vm.upMbps,
+            latencyMs = vm.latencyMs,
+            liveLabel = vm.liveLabel,
+            liveBytes = vm.liveBytes,
+            wifi = net.wifi
+        )
+
+        Spacer(Modifier.height(12.dp))
+        if (testing) {
+            if (vm.phase == SpeedViewModel.Phase.CHANGING && vm.rotationPhase != RotationPhase.IDLE) {
                 Text(
-                    "Wi-Fi: ${net.wifi}",
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = rotationText(vm.rotationPhase),
+                    style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Text(
-                    "셀룰러: ${net.cell}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Spacer(Modifier.height(8.dp))
+            }
+            OutlinedButton(
+                onClick = { vm.cancelTest() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = MaterialTheme.shapes.full
+            ) {
+                Icon(Icons.Outlined.Stop, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.size(8.dp))
+                Text("측정 취소", style = MaterialTheme.typography.titleMedium)
+            }
+        } else {
+            Button(
+                onClick = { vm.startTest() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = MaterialTheme.shapes.full
+            ) {
+                Icon(Icons.Outlined.PlayArrow, contentDescription = null, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.size(8.dp))
+                Text("측정 시작", style = MaterialTheme.typography.titleMedium)
             }
         }
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = "1회 측정에 최대 약 64MB 사용 (다운 최대 60MB + 업 최대 4MB)",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        if (vm.measureFailed) {
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = "측정 실패 — 다시 시도해주세요",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
 
-        Spacer(Modifier.height(24.dp))
-        when (vm.phase) {
-            SpeedViewModel.Phase.TESTING, SpeedViewModel.Phase.CHANGING -> {
-                Text(
-                    vm.liveLabel.ifEmpty { "측정 중" },
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Row(verticalAlignment = Alignment.Bottom) {
-                    Text(
-                        "%.1f".format(vm.liveMbps),
-                        style = MaterialTheme.typography.displayLarge,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        " Mbps",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                }
-                Text("(≈ ${formatRate(vm.liveMbps)}) · 사용량 ${"%.1f".format(vm.liveBytes / 1024.0 / 1024.0)}MB")
-                if (vm.phase == SpeedViewModel.Phase.CHANGING && vm.rotationPhase != RotationPhase.IDLE) {
-                    Text(
-                        rotationText(vm.rotationPhase),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Spacer(Modifier.height(12.dp))
-                OutlinedButton(onClick = { vm.cancelTest() }, modifier = Modifier.fillMaxWidth()) {
-                    Text("취소")
-                }
+        // 미달 시 IP 변경 (DONE에서만, Shizuku 필요)
+        if (vm.phase == SpeedViewModel.Phase.DONE && below) {
+            Spacer(Modifier.height(12.dp))
+            FilledTonalButton(
+                onClick = { vm.requestChange() },
+                enabled = shizukuReady,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = MaterialTheme.shapes.full
+            ) {
+                Text("IP 변경하기 (기준 미달)")
             }
-            else -> {
-                if (vm.measureFailed) {
-                    Text(
-                        "측정 실패 — 다시 시도해주세요",
-                        color = MaterialTheme.colorScheme.error
-                    )
-                } else if (vm.downMbps != null) {
-                    val down = vm.downMbps!!
-                    Row(verticalAlignment = Alignment.Bottom) {
-                        Text(
-                            "%.1f".format(down),
-                            style = MaterialTheme.typography.displayLarge,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            " Mbps",
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-                    }
-                    Text(
-                        "(${formatRate(down)})",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text("다운로드")
-                    vm.upMbps?.let { Text("업로드 ${formatMbps(it)}") }
-                    vm.latencyMs?.let { Text("지연 ${it}ms") }
-                    val threshold = config.speedThresholdMbps
-                    val below = (vm.downMbps ?: Float.MAX_VALUE.toDouble()) < threshold
-                    Text(
-                        if (below) "기준(${threshold}Mbps) 미달" else "기준 달성",
-                        color = if (below) MaterialTheme.colorScheme.error
-                        else LocalSpotColors.current.success
-                    )
-                } else {
-                    Text(
-                        "측정 시작을 누르면 다운로드·업로드를 측정합니다",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Spacer(Modifier.height(12.dp))
-                Button(
-                    onClick = { vm.startTest() },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("측정 시작")
-                }
+            if (!shizukuReady) {
                 Text(
-                    "1회 측정에 최대 약 64MB 사용 (다운 최대 60MB + 업 최대 4MB)",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    text = "Shizuku 연결 필요",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
         }
 
-        // 미달 시 IP 변경 (DONE에서만, Shizuku 필요)
-        if (vm.phase == SpeedViewModel.Phase.DONE && vm.downMbps != null &&
-            vm.downMbps!! < config.speedThresholdMbps
-        ) {
-            Spacer(Modifier.height(12.dp))
-            Button(
-                onClick = { vm.requestChange() },
-                enabled = shizukuReady,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("IP 변경하기")
-            }
-            if (!shizukuReady) {
-                Text(
-                    "Shizuku 연결 필요",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
-        }
-
-        // 전/후 비교
         if (vm.phase == SpeedViewModel.Phase.COMPARE) {
             Spacer(Modifier.height(16.dp))
-            Surface(shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceContainerLow) {
-                Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
-                    Text(
-                        "변경 전 ${vm.beforeMbps?.let { formatMbps(it) } ?: "-"} → " +
-                            "변경 후 ${vm.afterMbps?.let { formatMbps(it) } ?: "측정 실패"}",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(
-                            onClick = { vm.keepResult() },
-                            modifier = Modifier.weight(1f)
-                        ) { Text("유지") }
-                        Button(
-                            onClick = { vm.requestChange() },
-                            enabled = shizukuReady && vm.changeCount < 3,
-                            modifier = Modifier.weight(1f)
-                        ) { Text("다시 변경 (${vm.changeCount}/3)") }
-                    }
-                }
-            }
+            CompareCard(
+                before = vm.beforeMbps,
+                after = vm.afterMbps,
+                threshold = threshold,
+                maxRechecks = config.speedMaxRechecks,
+                changeCount = vm.changeCount,
+                shizukuReady = shizukuReady,
+                onKeep = { vm.keepResult() },
+                onChangeAgain = { vm.requestChange() }
+            )
         }
 
-        // 측정 기록
         Spacer(Modifier.height(24.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("측정 기록", style = MaterialTheme.typography.titleMedium)
+            Text(
+                text = "최근 측정",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f)
+            )
             if (records.isNotEmpty()) {
                 TextButton(onClick = { showClearConfirm = true }) { Text("기록 초기화") }
             }
         }
         if (records.isEmpty()) {
-            Text(
-                "아직 측정 기록이 없습니다",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        } else {
-            records.forEach { r ->
-                Surface(
-                    shape = MaterialTheme.shapes.medium,
-                    color = MaterialTheme.colorScheme.surfaceContainerLow,
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                formatTime(r.timestamp) + " · " + r.networkType,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            Text(
-                                "↓ ${r.downloadMbps?.let { "%.1f".format(it) } ?: "-"} Mbps" +
-                                    (r.downloadMbps?.let { " (${formatRate(it.toDouble())})" } ?: ""),
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            Text(
-                                "↑ ${r.uploadMbps?.let { "%.1f".format(it) } ?: "미측정"} Mbps" +
-                                    (r.uploadMbps?.let { " (${formatRate(it.toDouble())})" } ?: "") +
-                                    (r.latencyMs?.let { " · ${it}ms" } ?: "") +
-                                    " · ${"%.1f".format(r.bytesUsed / 1024.0 / 1024.0)}MB",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            r.signal?.let {
-                                Text(
-                                    it,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                        TextButton(onClick = { vm.deleteRecord(r.id) }) { Text("삭제") }
-                    }
-                }
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.extraLarge,
+                color = MaterialTheme.colorScheme.surfaceContainerLow
+            ) {
+                Text(
+                    text = "아직 측정 기록이 없습니다",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(16.dp)
+                )
             }
+        } else {
+            SpeedRecordCard(records = records, onDelete = { vm.deleteRecord(it) })
         }
+        Spacer(Modifier.height(16.dp))
     }
 
     if (showClearConfirm) {
@@ -296,6 +259,305 @@ fun SpeedScreen(contentPadding: PaddingValues) {
             dismissButton = {
                 TextButton(onClick = { showClearConfirm = false }) { Text("취소") }
             }
+        )
+    }
+}
+
+@Composable
+private fun SpeedHeroCard(
+    testing: Boolean,
+    liveMbps: Double,
+    downMbps: Double?,
+    upMbps: Double?,
+    latencyMs: Long?,
+    liveLabel: String,
+    liveBytes: Long,
+    wifi: String
+) {
+    val display = if (testing) liveMbps else downMbps
+    val sub = when {
+        testing -> liveLabel.ifEmpty { "측정 중" } +
+            " · 사용량 ${"%.1f".format(liveBytes / 1024.0 / 1024.0)}MB"
+        downMbps != null -> "≈ ${formatRate(downMbps)} · 최근 측정"
+        else -> "측정 시작을 누르면 다운로드·업로드를 측정합니다"
+    }
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.surfaceContainerLow
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "다운로드",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.weight(1f))
+                Surface(
+                    shape = MaterialTheme.shapes.full,
+                    color = MaterialTheme.colorScheme.secondaryContainer
+                ) {
+                    Text(
+                        text = "Wi-Fi ${wifi}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
+                    )
+                }
+            }
+            Row(verticalAlignment = Alignment.Bottom) {
+                if (display == null) {
+                    Text(
+                        text = "측정 전",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                } else {
+                    Text(
+                        text = "%.2f".format(display),
+                        style = MaterialTheme.typography.displayMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = " Mbps",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(bottom = 6.dp)
+                    )
+                }
+            }
+            Text(
+                text = sub,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 6.dp),
+                color = MaterialTheme.colorScheme.outlineVariant
+            )
+            Row(modifier = Modifier.fillMaxWidth()) {
+                MiniMetric(
+                    label = "업로드",
+                    value = upMbps?.let { "%.2f Mbps".format(it) } ?: "—",
+                    modifier = Modifier.weight(1f)
+                )
+                MiniMetric(
+                    label = "지연",
+                    value = latencyMs?.let { "$it ms" } ?: "—",
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MiniMetric(label: String, value: String, modifier: Modifier = Modifier) {
+    Column(modifier = modifier) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
+@Composable
+private fun CompareCard(
+    before: Double?,
+    after: Double?,
+    threshold: Float,
+    maxRechecks: Int,
+    changeCount: Int,
+    shizukuReady: Boolean,
+    onKeep: () -> Unit,
+    onChangeAgain: () -> Unit
+) {
+    val achieved = after != null && after >= threshold
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.surfaceContainerLow
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "IP 변경 전/후",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                SpeedBadge(
+                    label = if (achieved) "기준 ${threshold.toInt()}Mbps 달성" else "기준 미달",
+                    container = if (achieved) {
+                        LocalSpotColors.current.successContainer
+                    } else {
+                        MaterialTheme.colorScheme.errorContainer
+                    },
+                    content = if (achieved) {
+                        LocalSpotColors.current.onSuccessContainer
+                    } else {
+                        MaterialTheme.colorScheme.onErrorContainer
+                    }
+                )
+            }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                CompareBox(
+                    label = "변경 전",
+                    value = before?.let { "%.2f Mbps".format(it) } ?: "—",
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(
+                    imageVector = Icons.Outlined.ArrowForward,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp)
+                )
+                CompareBox(
+                    label = "변경 후",
+                    value = after?.let { "%.2f Mbps".format(it) } ?: "측정 실패",
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            Text(
+                text = "자동 재측정 1회 · 기준 미달 시 최대 ${maxRechecks}회 재변경",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(
+                    onClick = onKeep,
+                    modifier = Modifier.weight(1f),
+                    shape = MaterialTheme.shapes.full
+                ) { Text("유지") }
+                Button(
+                    onClick = onChangeAgain,
+                    enabled = shizukuReady && changeCount < 3,
+                    modifier = Modifier.weight(1f),
+                    shape = MaterialTheme.shapes.full
+                ) { Text("다시 변경 ($changeCount/3)") }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CompareBox(label: String, value: String, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier,
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+    }
+}
+
+@Composable
+private fun SpeedRecordCard(records: List<SpeedRecord>, onDelete: (Long) -> Unit) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.surfaceContainerLow
+    ) {
+        Column {
+            records.forEachIndexed { index, record ->
+                SpeedRecordRow(record = record, onDelete = { onDelete(record.id) })
+                if (index < records.lastIndex) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(start = 62.dp, end = 16.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SpeedRecordRow(record: SpeedRecord, onDelete: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Speed,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "↓ ${record.downloadMbps?.let { "%.2f".format(it) } ?: "-"} · " +
+                    "↑ ${record.uploadMbps?.let { "%.2f".format(it) } ?: "-"} Mbps",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = buildString {
+                    append(formatTime(record.timestamp))
+                    record.latencyMs?.let { append(" · 지연 ${it}ms") }
+                    record.networkType.takeIf { it.isNotBlank() }?.let { append(" · $it") }
+                },
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1
+            )
+        }
+        IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
+            Icon(
+                imageVector = Icons.Outlined.Delete,
+                contentDescription = "측정 기록 삭제",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun SpeedBadge(label: String, container: Color, content: Color) {
+    Surface(shape = MaterialTheme.shapes.full, color = container) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = content,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
         )
     }
 }

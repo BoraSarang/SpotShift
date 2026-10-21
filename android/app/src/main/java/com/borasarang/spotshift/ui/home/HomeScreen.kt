@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.BatteryStd
@@ -43,6 +42,7 @@ import com.borasarang.spotshift.ui.components.RecentChangeCard
 import com.borasarang.spotshift.ui.components.RotationProgress
 import com.borasarang.spotshift.ui.components.StatusCard
 import kotlinx.coroutines.delay
+import com.borasarang.spotshift.ui.theme.LocalSpotColors
 
 @Composable
 fun HomeScreen(contentPadding: PaddingValues) {
@@ -169,13 +169,13 @@ fun HomeScreen(contentPadding: PaddingValues) {
             CountdownGauge(
                 remainingSeconds = remaining,
                 totalSeconds = intervalSec,
-                gaugeColor = if (running) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary,
+                gaugeColor = if (running) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary,
                 nextChangeAtLabel = nextChangeAtLabel
             )
         } else {
             Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surface,
+                shape = MaterialTheme.shapes.extraLarge,
+                color = MaterialTheme.colorScheme.surfaceContainerLow,
                 modifier = Modifier.size(width = 200.dp, height = 200.dp)
             ) {
                 Column(
@@ -212,7 +212,7 @@ fun HomeScreen(contentPadding: PaddingValues) {
                     text = message,
                     style = MaterialTheme.typography.bodyMedium,
                     color = when (rotationState.phase) {
-                        RotationPhase.SUCCESS -> MaterialTheme.colorScheme.secondary
+                        RotationPhase.SUCCESS -> LocalSpotColors.current.success
                         RotationPhase.FAILED -> MaterialTheme.colorScheme.error
                         else -> MaterialTheme.colorScheme.onSurfaceVariant
                     },
@@ -229,7 +229,7 @@ fun HomeScreen(contentPadding: PaddingValues) {
             },
             style = MaterialTheme.typography.bodySmall,
             color = if (config.enabled) {
-                MaterialTheme.colorScheme.secondary
+                LocalSpotColors.current.success
             } else {
                 MaterialTheme.colorScheme.onSurfaceVariant
             },

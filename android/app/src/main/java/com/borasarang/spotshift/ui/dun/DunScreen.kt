@@ -1,7 +1,6 @@
 package com.borasarang.spotshift.ui.dun
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -12,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -30,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.borasarang.spotshift.DebugLogger
 import com.borasarang.spotshift.ui.home.HomeViewModel
+import com.borasarang.spotshift.ui.theme.LocalSpotColors
 
 /**
  * T-37 — DUN 탭. APN 선택 → DUN 추가/원복 (Shizuku 필요).
@@ -73,8 +72,8 @@ fun DunScreen(contentPadding: PaddingValues) {
 
         // T-39 — DUN 유지 (Shizuku 연결 시 자동 재적용)
         Surface(
-            shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.surface
+            shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.surfaceContainerLow
         ) {
             Row(
                 modifier = Modifier
@@ -99,8 +98,8 @@ fun DunScreen(contentPadding: PaddingValues) {
         }
 
         Surface(
-            shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.surface
+            shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.surfaceContainerLow
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Row(
@@ -143,7 +142,7 @@ fun DunScreen(contentPadding: PaddingValues) {
                                     if (apn.hasDun) " · DUN" else "",
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = if (apn.hasDun) {
-                                    MaterialTheme.colorScheme.secondary
+                                    LocalSpotColors.current.success
                                 } else {
                                     MaterialTheme.colorScheme.onSurface
                                 }

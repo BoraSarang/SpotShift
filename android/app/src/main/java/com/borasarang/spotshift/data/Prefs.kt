@@ -127,6 +127,25 @@ class Prefs(private val context: Context) {
 
     suspend fun updateSpeedWatch(v: Boolean) = editKey { it[KEY_SPEED_WATCH] = v }
 
+    // T-47 — 테마 모드 (SYSTEM|LIGHT|DARK) + 동적 색상
+    val themeModeFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_THEME_MODE] ?: THEME_MODE_SYSTEM
+    }
+
+    suspend fun getThemeMode(): String =
+        context.dataStore.data.first()[KEY_THEME_MODE] ?: THEME_MODE_SYSTEM
+
+    suspend fun updateThemeMode(mode: String) = editKey { it[KEY_THEME_MODE] = mode }
+
+    val dynamicColorFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_DYNAMIC_COLOR] ?: true
+    }
+
+    suspend fun getDynamicColor(): Boolean =
+        context.dataStore.data.first()[KEY_DYNAMIC_COLOR] ?: true
+
+    suspend fun updateDynamicColor(v: Boolean) = editKey { it[KEY_DYNAMIC_COLOR] = v }
+
     private suspend fun editKey(block: (androidx.datastore.preferences.core.MutablePreferences) -> Unit) {
         context.dataStore.edit(block)
         DebugLogger.feature("Prefs", "키 저장됨")
@@ -275,6 +294,10 @@ class Prefs(private val context: Context) {
         private val KEY_POWER_GUARD = booleanPreferencesKey("power_guard")
         // T-42 — 속도 감시 토글
         private val KEY_SPEED_WATCH = booleanPreferencesKey("speed_watch")
+        // T-47 — 테마 모드 / 동적 색상
+        private val KEY_THEME_MODE = stringPreferencesKey("theme_mode")
+        private val KEY_DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
+        const val THEME_MODE_SYSTEM = "SYSTEM"
 
         private const val MAX_RECORDS = 200
         // v0.5 (T-27) — 속도 기록 최대 보관

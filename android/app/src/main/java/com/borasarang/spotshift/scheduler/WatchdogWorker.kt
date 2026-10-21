@@ -9,6 +9,7 @@ import com.borasarang.spotshift.core.DataController
 import com.borasarang.spotshift.core.HotspotController
 import com.borasarang.spotshift.core.IpVerifier
 import com.borasarang.spotshift.core.RotationEngine
+import com.borasarang.spotshift.core.RotationGate
 import com.borasarang.spotshift.core.SpeedWatchdog
 import com.borasarang.spotshift.data.Prefs
 import com.borasarang.spotshift.data.RotationRecord
@@ -53,7 +54,20 @@ class WatchdogWorker(appContext: Context, params: WorkerParameters) :
         }
     }
 
+    /** T-52 — 진행 중이면 감시 트리거 스킵. 진행 중인 작업은 그대로 계속된다. */
     private suspend fun triggerRotation(reason: String): Result {
+        if (!RotationGate.tryEnter(RotationGate.Source.WATCHDOG)) {
+            DebugLogger.w("[GATE] 다른 IP 변경 진행 중 — 감시 트리거 스킵 (${RotationGate.describeBusy()})")
+            return Result.success()
+        }
+        return try {
+            runWatchdogRotation(reason)
+        } finally {
+            RotationGate.exit()
+        }
+    }
+
+    private suspend fun runWatchdogRotation(reason: String): Result {
         val ctx = applicationContext
         val prefs = Prefs(ctx)
         val config = prefs.getConfig()

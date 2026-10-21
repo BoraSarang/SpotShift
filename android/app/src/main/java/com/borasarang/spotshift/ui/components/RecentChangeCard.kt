@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -18,6 +17,7 @@ import com.borasarang.spotshift.data.RotationRecord
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import com.borasarang.spotshift.ui.theme.LocalSpotColors
 
 /**
  * v0.4 — 최근 변경 요약 카드 (홈).
@@ -30,7 +30,7 @@ fun RecentChangeCard(
 ) {
     val timeFormat = remember { SimpleDateFormat("MM-dd HH:mm", Locale.KOREA) }
     val statusColor = when {
-        record.changed -> MaterialTheme.colorScheme.secondary
+        record.changed -> LocalSpotColors.current.success
         record.errorCode != null -> MaterialTheme.colorScheme.error
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
@@ -43,8 +43,8 @@ fun RecentChangeCard(
     }
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surface
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.surfaceContainerLow
     ) {
         Column(
             modifier = Modifier.padding(20.dp),

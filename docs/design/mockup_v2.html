@@ -1,0 +1,924 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SpotShift — Redesign v2 Mockup (Light / Dark)</title>
+<style>
+  /* ============ MD3 tokens: static fallback (seed #0E7BC4) ============ */
+  [data-theme="light"] {
+    --primary: #00639B;
+    --on-primary: #FFFFFF;
+    --primary-container: #CDE5FF;
+    --on-primary-container: #001D33;
+    --secondary: #4F616E;
+    --on-secondary: #FFFFFF;
+    --secondary-container: #D2E5F4;
+    --on-secondary-container: #0B1D29;
+    --tertiary: #7A5900;
+    --on-tertiary: #FFFFFF;
+    --tertiary-container: #FFDF9C;
+    --on-tertiary-container: #261A00;
+    --error: #BA1A1A;
+    --on-error: #FFFFFF;
+    --error-container: #FFDAD6;
+    --on-error-container: #410002;
+    --success: #146C2E;
+    --on-success: #FFFFFF;
+    --success-container: #A8F5BD;
+    --on-success-container: #00210B;
+    --warning: #8A5100;
+    --warning-container: #FFDDB3;
+    --on-warning-container: #2C1600;
+
+    --surface: #F7F9FF;
+    --surface-dim: #D7DADF;
+    --surface-bright: #F7F9FF;
+    --surface-container-lowest: #FFFFFF;
+    --surface-container-low: #F1F4FA;
+    --surface-container: #EBEEF4;
+    --surface-container-high: #E5E8EE;
+    --surface-container-highest: #DFE2E8;
+    --on-surface: #181C20;
+    --on-surface-variant: #41474E;
+    --outline: #71787F;
+    --outline-variant: #C1C7CE;
+    --inverse-surface: #2D3135;
+    --inverse-on-surface: #EEF1F6;
+
+    --page: #E9ECF2;
+    --page-ink: #1A1D21;
+    --page-muted: #5C636B;
+    --frame-shadow: 0 24px 60px rgba(16, 24, 40, .16), 0 2px 8px rgba(16, 24, 40, .08);
+    --frame-border: rgba(15, 23, 42, .10);
+    --hero-tint: #E7F2FF;
+    --ring-track: #DDE2E9;
+    --glass: rgba(255, 255, 255, .72);
+  }
+
+  [data-theme="dark"] {
+    --primary: #93CCFF;
+    --on-primary: #003354;
+    --primary-container: #00497A;
+    --on-primary-container: #CDE5FF;
+    --secondary: #B6C9D8;
+    --on-secondary: #21323E;
+    --secondary-container: #374956;
+    --on-secondary-container: #D2E5F4;
+    --tertiary: #F5BF48;
+    --on-tertiary: #402D00;
+    --tertiary-container: #5C4200;
+    --on-tertiary-container: #FFDF9C;
+    --error: #FFB4AB;
+    --on-error: #690005;
+    --error-container: #93000A;
+    --on-error-container: #FFDAD6;
+    --success: #8BD99F;
+    --on-success: #00391A;
+    --success-container: #00531F;
+    --on-success-container: #A8F5BD;
+    --warning: #FFB95C;
+    --warning-container: #653D00;
+    --on-warning-container: #FFDDB3;
+
+    --surface: #0F1318;
+    --surface-dim: #0F1318;
+    --surface-bright: #35393F;
+    --surface-container-lowest: #0A0E12;
+    --surface-container-low: #171C21;
+    --surface-container: #1B2025;
+    --surface-container-high: #252A30;
+    --surface-container-highest: #30353B;
+    --on-surface: #DFE3E8;
+    --on-surface-variant: #BFC6CE;
+    --outline: #899098;
+    --outline-variant: #3F464D;
+    --inverse-surface: #DFE3E8;
+    --inverse-on-surface: #2B3036;
+
+    --page: #07090C;
+    --page-ink: #E7EBF0;
+    --page-muted: #9AA3AD;
+    --frame-shadow: 0 28px 70px rgba(0, 0, 0, .65), 0 2px 10px rgba(0, 0, 0, .4);
+    --frame-border: rgba(255, 255, 255, .09);
+    --hero-tint: #121B24;
+    --ring-track: #2B3138;
+    --glass: rgba(255, 255, 255, .06);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background:
+      radial-gradient(1000px 600px at 15% -10%, #1b2634 0%, transparent 60%),
+      radial-gradient(900px 500px at 95% 0%, #152b2c 0%, transparent 55%),
+      #0b0e12;
+    color: #E7EBF0;
+    font-family: "Roboto", "Roboto Flex", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    padding: 48px 32px 96px;
+  }
+
+  /* ============ page chrome ============ */
+  .page-head { max-width: 1360px; margin: 0 auto 40px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase;
+    color: #7FD3FF; padding: 6px 12px; border-radius: 999px;
+    border: 1px solid rgba(127, 211, 255, .28); background: rgba(127, 211, 255, .08);
+  }
+  h1.page-title { font-size: 40px; line-height: 46px; letter-spacing: -.02em; margin: 18px 0 10px; font-weight: 600; }
+  .page-sub { color: #9AA6B2; font-size: 15px; line-height: 24px; max-width: 760px; margin: 0; }
+  .meta-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+  .meta-row span {
+    font-size: 12px; color: #C7D0DA; border: 1px solid rgba(255,255,255,.14);
+    border-radius: 999px; padding: 6px 12px; background: rgba(255,255,255,.04);
+  }
+
+  .section-head { max-width: 1360px; margin: 56px auto 20px; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  .section-head h2 { font-size: 22px; margin: 0; font-weight: 600; letter-spacing: -.01em; }
+  .section-head p { margin: 0; color: #8F9BA7; font-size: 13px; }
+
+  /* ============ token swatches ============ */
+  .token-grid { max-width: 1360px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .swatch { border-radius: 16px; padding: 12px; border: 1px solid rgba(255,255,255,.09); background: rgba(255,255,255,.03); }
+  .swatch .chip-color { height: 44px; border-radius: 10px; margin-bottom: 10px; border: 1px solid rgba(0,0,0,.25); }
+  .swatch .name { font-size: 11.5px; font-weight: 600; letter-spacing: .01em; color: #DCE3EA; }
+  .swatch .val { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 11px; color: #8F9BA7; margin-top: 2px; }
+
+  /* ============ phone frames ============ */
+  .screen-block { max-width: 1360px; margin: 0 auto 64px; }
+  .screen-caption { display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px; }
+  .screen-caption h3 { margin: 0; font-size: 17px; font-weight: 600; }
+  .screen-caption p { margin: 0; font-size: 12.5px; color: #8F9BA7; }
+  .pair { display: flex; gap: 28px; flex-wrap: wrap; }
+
+  .phone {
+    width: 392px;
+    height: 842px;
+    border-radius: 46px;
+    background: var(--surface);
+    color: var(--on-surface);
+    box-shadow: var(--frame-shadow);
+    border: 1px solid var(--frame-border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    isolation: isolate;
+  }
+  .statusbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 26px 6px; font-size: 12.5px; font-weight: 600;
+    color: var(--on-surface); letter-spacing: .01em;
+  }
+  .statusbar .right { display: flex; align-items: center; gap: 6px; }
+  .statusbar svg { opacity: .9; }
+
+  .viewport {
+    flex: 1;
+    padding: 0 18px 8px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 14px), transparent);
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 14px), transparent);
+  }
+  .viewport::-webkit-scrollbar { display: none; }
+
+  /* ============ type scale ============ */
+  .t-display { font-size: 45px; line-height: 52px; font-weight: 600; letter-spacing: -.5px; font-variant-numeric: tabular-nums; }
+  .t-headline { font-size: 26px; line-height: 32px; font-weight: 600; letter-spacing: -.3px; }
+  .t-title { font-size: 16px; line-height: 22px; font-weight: 600; letter-spacing: -.1px; }
+  .t-title-s { font-size: 14px; line-height: 20px; font-weight: 600; }
+  .t-body { font-size: 14px; line-height: 21px; font-weight: 400; }
+  .t-body-s { font-size: 13px; line-height: 19px; }
+  .t-label { font-size: 12px; line-height: 16px; font-weight: 500; letter-spacing: .35px; }
+  .t-label-s { font-size: 11px; line-height: 14px; font-weight: 600; letter-spacing: .4px; }
+  .muted { color: var(--on-surface-variant); }
+  .center { text-align: center; }
+  .mono { font-family: ui-monospace, "SF Mono", "Roboto Mono", Menlo, monospace; font-variant-numeric: tabular-nums; letter-spacing: -.2px; }
+
+  /* ============ app bar ============ */
+  .appbar { padding: 10px 4px 14px; }
+  .appbar-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .icon-btn {
+    width: 40px; height: 40px; border-radius: 999px; border: 0;
+    background: transparent; color: var(--on-surface-variant);
+    display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto;
+  }
+  .icon-btn--filled { background: var(--surface-container-high); color: var(--on-surface); }
+  .text-btn { border: 0; background: transparent; color: var(--primary); font: 600 13.5px/18px inherit; padding: 8px 10px; border-radius: 999px; }
+
+  /* ============ surfaces ============ */
+  .stack { display: flex; flex-direction: column; gap: 12px; }
+  .card {
+    background: var(--surface-container-low);
+    border-radius: 26px;
+    padding: 18px;
+  }
+  .card--outlined { background: transparent; border: 1px solid var(--outline-variant); }
+  .card--high { background: var(--surface-container-high); }
+  .card--hero {
+    background:
+      radial-gradient(120% 140% at 0% 0%, var(--hero-tint) 0%, transparent 62%),
+      var(--surface-container-low);
+    border: 1px solid var(--frame-border);
+  }
+  .card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .divider { height: 1px; background: var(--outline-variant); opacity: .6; margin: 14px 0; }
+
+  /* ============ home ============ */
+  .status-badge { display: inline-flex; align-items: center; gap: 7px; font: 600 12.5px/16px inherit; color: var(--success); }
+  .status-badge .dot { width: 8px; height: 8px; border-radius: 999px; background: var(--success); box-shadow: 0 0 0 4px color-mix(in srgb, var(--success) 18%, transparent); }
+  .ip-row { display: flex; align-items: center; gap: 10px; margin: 10px 0 2px; }
+  .ip-row .t-headline { letter-spacing: -.6px; }
+  .mini-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .mini-grid > div { display: flex; flex-direction: column; gap: 3px; }
+
+  .orb-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 2px 0 0; }
+  .orb {
+    width: 192px; height: 192px; border-radius: 50%; position: relative;
+    background: conic-gradient(from 168deg, var(--primary) calc(var(--p) * 1%), var(--ring-track) 0);
+    display: grid; place-items: center;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--outline-variant) 40%, transparent);
+  }
+  .orb::before {
+    content: ""; position: absolute; inset: 15px; border-radius: 50%;
+    background:
+      radial-gradient(80% 80% at 30% 20%, var(--surface-container-lowest), transparent 70%),
+      var(--surface-container-low);
+    box-shadow: 0 10px 30px rgba(0,0,0,.12);
+  }
+  .orb-inner { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .orb-chip {
+    margin-top: 8px; font: 600 12px/16px inherit; color: var(--on-primary-container);
+    background: var(--primary-container); padding: 4px 10px; border-radius: 999px;
+  }
+  .orb-note { max-width: 270px; }
+
+  .chips { display: flex; flex-wrap: nowrap; gap: 6px; justify-content: center; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    height: 30px; padding: 0 10px; border-radius: 999px;
+    border: 1px solid var(--outline-variant);
+    font: 500 12px/16px inherit; color: var(--on-surface-variant);
+    background: var(--surface-container-low); white-space: nowrap;
+  }
+  .chip--tonal { background: var(--secondary-container); color: var(--on-secondary-container); border-color: transparent; }
+  .chip--success { background: var(--success-container); color: var(--on-success-container); border-color: transparent; }
+  .chip--warning { background: var(--warning-container); color: var(--on-warning-container); border-color: transparent; }
+  .chip--error { background: var(--error-container); color: var(--on-error-container); border-color: transparent; }
+
+  .ip-change { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 8px 0 6px; font-weight: 600; }
+  .ip-change .arrow { color: var(--primary); }
+
+  /* ============ buttons ============ */
+  .btn {
+    height: 52px; border-radius: 999px; border: 0; width: 100%;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    font: 600 15px/20px inherit; letter-spacing: .1px;
+  }
+  .btn--filled { background: var(--primary); color: var(--on-primary); }
+  .btn--tonal { background: var(--secondary-container); color: var(--on-secondary-container); }
+  .btn--outlined { background: transparent; color: var(--primary); border: 1px solid var(--outline); }
+  .btn--sm { height: 40px; font-size: 13.5px; width: auto; padding: 0 18px; }
+  .btn-row { display: flex; gap: 10px; }
+  .btn-row .btn { flex: 1; }
+
+  /* ============ lists ============ */
+  .list { display: flex; flex-direction: column; }
+  .list-row { display: flex; align-items: center; gap: 14px; padding: 14px 2px; }
+  .list-row + .list-row { border-top: 1px solid color-mix(in srgb, var(--outline-variant) 55%, transparent); }
+  .list-row .grow { flex: 1; min-width: 0; }
+  .list-row .grow .ip-title { font-family: ui-monospace, "SF Mono", "Roboto Mono", Menlo, monospace; font-size: 12px; font-weight: 600; letter-spacing: -.1px; }
+  .lead {
+    width: 40px; height: 40px; border-radius: 999px; flex: 0 0 auto;
+    display: grid; place-items: center;
+    background: var(--surface-container-high); color: var(--on-surface-variant);
+  }
+  .lead--success { background: var(--success-container); color: var(--on-success-container); }
+  .lead--error { background: var(--error-container); color: var(--on-error-container); }
+  .lead--primary { background: var(--primary-container); color: var(--on-primary-container); }
+  .badge {
+    font: 600 11px/14px inherit; padding: 4px 8px; border-radius: 999px; white-space: nowrap;
+    background: var(--surface-container-high); color: var(--on-surface-variant);
+  }
+  .badge--success { background: var(--success-container); color: var(--on-success-container); }
+  .badge--error { background: var(--error-container); color: var(--on-error-container); }
+  .badge--primary { background: var(--primary-container); color: var(--on-primary-container); }
+  .group-label { padding: 10px 0 2px; }
+  .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* ============ controls ============ */
+  .switch { width: 50px; height: 30px; border-radius: 999px; background: var(--surface-container-highest); position: relative; flex: 0 0 auto; border: 1px solid var(--outline); transition: .2s; }
+  .switch::after { content: ""; position: absolute; top: 50%; left: 5px; width: 20px; height: 20px; margin-top: -10px; border-radius: 999px; background: var(--outline); transition: .2s; }
+  .switch.on { background: var(--primary); border-color: var(--primary); }
+  .switch.on::after { left: auto; right: 5px; width: 22px; height: 22px; margin-top: -11px; background: var(--on-primary); }
+
+  .slider { position: relative; height: 24px; display: flex; align-items: center; }
+  .slider .track { position: absolute; left: 0; right: 0; height: 5px; border-radius: 999px; background: var(--surface-container-highest); overflow: hidden; }
+  .slider .fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--primary); border-radius: 999px; }
+  .slider .knob {
+    position: absolute; width: 22px; height: 22px; border-radius: 999px;
+    background: var(--primary); box-shadow: 0 0 0 4px var(--surface-container-low), 0 2px 6px rgba(0,0,0,.25);
+    transform: translateX(-50%);
+  }
+  .slider-row { display: flex; justify-content: space-between; margin-top: 4px; }
+
+  .seg { display: flex; gap: 8px; padding: 2px 0 4px; overflow-x: auto; scrollbar-width: none; }
+  .seg::-webkit-scrollbar { display: none; }
+  .seg .item {
+    height: 32px; padding: 0 13px; border-radius: 999px; display: inline-flex; align-items: center; gap: 6px;
+    font: 500 12.5px/16px inherit; color: var(--on-surface-variant);
+    border: 1px solid var(--outline-variant); background: transparent; white-space: nowrap;
+  }
+  .seg .item.active { background: var(--secondary-container); color: var(--on-secondary-container); border-color: transparent; }
+
+  .progress { height: 6px; border-radius: 999px; background: var(--surface-container-highest); overflow: hidden; }
+  .progress > i { display: block; height: 100%; border-radius: 999px; background: var(--primary); }
+
+  .banner { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-radius: 20px; background: color-mix(in srgb, var(--success-container) 42%, var(--surface)); color: var(--on-surface); border: 1px solid color-mix(in srgb, var(--success) 22%, transparent); }
+  .banner > svg:first-child { color: var(--success); flex: 0 0 auto; }
+  .banner--info { background: color-mix(in srgb, var(--primary-container) 42%, var(--surface)); border-color: color-mix(in srgb, var(--primary) 20%, transparent); }
+  .banner--info > svg:first-child { color: var(--primary); }
+  .banner--warn { background: color-mix(in srgb, var(--warning-container) 45%, var(--surface)); border-color: color-mix(in srgb, var(--warning) 22%, transparent); }
+  .banner--warn > svg:first-child { color: var(--warning); }
+
+  /* ============ speed ============ */
+  .speed-hero { display: flex; align-items: flex-end; gap: 6px; }
+  .speed-hero .unit { font: 600 14px/20px inherit; padding-bottom: 10px; color: var(--on-surface-variant); }
+  .speed-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .metric { background: var(--surface-container-low); border-radius: 22px; padding: 14px 16px; }
+  .metric .val { font: 600 24px/30px inherit; font-variant-numeric: tabular-nums; margin-top: 2px; }
+  .compare { display: flex; align-items: center; gap: 12px; }
+  .compare .box { flex: 1; text-align: center; background: var(--surface-container-high); border-radius: 18px; padding: 10px; }
+  .compare .arrow { color: var(--primary); }
+
+  /* ============ nav bar ============ */
+  .navbar {
+    display: flex; align-items: stretch; justify-content: space-around;
+    padding: 8px 10px 6px; background: var(--surface-container);
+    border-top: 1px solid color-mix(in srgb, var(--outline-variant) 45%, transparent);
+  }
+  .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 2px 0; color: var(--on-surface-variant); }
+  .nav-item .pill {
+    width: 62px; height: 32px; border-radius: 999px; display: grid; place-items: center;
+    background: transparent;
+  }
+  .nav-item.active { color: var(--on-surface); }
+  .nav-item.active .pill { background: var(--secondary-container); color: var(--on-secondary-container); }
+  .nav-item .label { font: 600 10.5px/13px inherit; letter-spacing: .2px; }
+  .gesture { display: grid; place-items: center; padding: 4px 0 10px; background: var(--surface-container); }
+  .gesture i { width: 108px; height: 4px; border-radius: 999px; background: var(--on-surface); opacity: .28; }
+
+  .note { max-width: 1360px; margin: 0 auto 80px; color: #8F9BA7; font-size: 13px; line-height: 22px; border-left: 2px solid rgba(127,211,255,.35); padding-left: 16px; }
+  .note b { color: #C7D0DA; }
+
+  body.solo { padding: 24px 32px 48px; }
+  body.solo .page-head,
+  body.solo .section-head,
+  body.solo .token-grid,
+  body.solo .note { display: none; }
+  body.solo .screen-block { margin-bottom: 0; }
+  body.solo .screen-caption { margin-top: 0; }
+</style>
+</head>
+<body data-theme="light">
+
+  <header class="page-head">
+    <span class="eyebrow">Material 3 Expressive · redesign v2</span>
+    <h1 class="page-title">SpotShift — 다크 / 라이트 목업</h1>
+    <p class="page-sub">
+      기존 다크 OLED 단일 테마를 MD3 토큰 기반 2테마 시스템으로 재설계했습니다. 5개 탭(상태·기록·속도·DUN·설정)을
+      실제 앱 데이터로 그렸고, 모든 색·형태·타이포는 토큰만 사용합니다. Android 12+ 동적 색상(dynamic color)이 켜지면
+      primary 계열은 사용자 배경화면에서 생성되고, 아래 정적 팔레트는 그 폴백입니다.
+    </p>
+    <div class="meta-row">
+      <span>Seed #0E7BC4</span>
+      <span>Material3 Expressive API</span>
+      <span>Compose-first</span>
+      <span>Edge-to-edge</span>
+      <span>Roboto Flex</span>
+      <span>shape: 26/28dp hero · full buttons</span>
+      <span>spacing 8dp grid</span>
+    </div>
+  </header>
+
+  <div class="section-head">
+    <h2>1. 색상 토큰</h2>
+    <p>라이트 / 다크 팔레트 — 시맨틱 역할(role)만 사용</p>
+  </div>
+  <div class="token-grid" id="tokens"></div>
+
+  <div class="section-head">
+    <h2>2. 화면 목업</h2>
+    <p>좌: 라이트 · 우: 다크 (같은 화면, 같은 컴포넌트)</p>
+  </div>
+
+  <div id="screens"></div>
+
+  <div class="note">
+    <b>읽는 법</b> — 각 프레임은 실제 앱의 상태(자동 변경 ON·공인 IP 118.235.31.73·최근 측정 0.69Mbps)를 그대로 사용했습니다.
+    카드 안쪽 스크롤이 필요하면 프레임을 스크롤하세요. 이 목업은 정적 HTML이지만 토큰·간격·타이포는 Compose에서
+    그대로 옮길 수 있게 설계했습니다.
+  </div>
+
+<script>
+/* ---------------- icons (inline SVG, stroke = currentColor) ---------------- */
+const P = {
+  tethering: '<circle cx="12" cy="17.2" r="1.9"/><path d="M8.4 14.6a5.4 5.4 0 0 1 7.2 0"/><path d="M5.5 11.6a9.6 9.6 0 0 1 13 0"/><path d="M2.6 8.6a13.8 13.8 0 0 1 18.8 0"/>',
+  history: '<circle cx="12" cy="12" r="8.6"/><path d="M12 7.4V12l3.1 1.9"/>',
+  speed: '<path d="M4.2 17.4a8 8 0 1 1 15.6 0"/><path d="M12 17.2l4.3-5.2"/><circle cx="12" cy="17.4" r="1.7"/>',
+  router: '<rect x="3.6" y="12.2" width="16.8" height="7" rx="2.4"/><path d="M7.6 15.7h.02M10.6 15.7h.02"/><path d="M8.2 12.2V8.4M15.8 12.2V8.4"/>',
+  settings: '<path d="M4 7.2h9.6M18.2 7.2H20M4 16.8h4.2M12.8 16.8H20"/><circle cx="16" cy="7.2" r="2.1"/><circle cx="10.4" cy="16.8" r="2.1"/>',
+  battery: '<rect x="2.8" y="8.2" width="15.2" height="7.6" rx="2.2"/><path d="M20.4 11v2"/><rect x="5" y="10.4" width="8" height="3.2" rx="1" fill="currentColor" stroke="none"/>',
+  signal: '<path d="M5 19v-4.2M9.7 19v-7.4M14.3 19V8.2M19 19V5"/>',
+  check: '<path d="M5 12.6l4.6 4.6L19 7.4"/>',
+  error: '<circle cx="12" cy="12" r="8.6"/><path d="M12 7.8v5.4M12 16.2h.02"/>',
+  chevron: '<path d="M9.4 5.8l6.2 6.2-6.2 6.2"/>',
+  refresh: '<path d="M20 12a8 8 0 1 1-2.8-6.1"/><path d="M20.2 4.2v5h-5"/>',
+  copy: '<rect x="9" y="9" width="10.4" height="10.4" rx="2.4"/><path d="M15.2 5.4H7.2A2.4 2.4 0 0 0 4.8 7.8v8"/>',
+  bolt: '<path d="M13.2 3.2L5.4 13.6h4.9l-.9 7.2 7.8-10.6h-4.9z"/>',
+  play: '<path d="M8.4 5.6v12.8l10-6.4z"/>',
+  wifi: '<path d="M3.6 9.2a12 12 0 0 1 16.8 0"/><path d="M7 12.5a7.4 7.4 0 0 1 10 0"/><circle cx="12" cy="16.6" r="1.5"/>',
+  shield: '<path d="M12 3.2l7 2.9v5.7c0 4.3-2.9 7.3-7 8.8-4.1-1.5-7-4.5-7-8.8V6.1z"/>',
+  power: '<path d="M12 3.4v7.4"/><path d="M7.6 7a7 7 0 1 0 8.8 0"/>',
+  down: '<path d="M12 4.8v13.6M6.8 13.2L12 18.4l5.2-5.2"/>',
+  up: '<path d="M12 19.2V5.6M6.8 10.8L12 5.6l5.2 5.2"/>',
+  trash: '<path d="M5.6 7.4h12.8M9.6 7.4V5.2h4.8v2.2M7.4 7.4l.9 11.4h7.4l.9-11.4"/>',
+  info: '<circle cx="12" cy="12" r="8.6"/><path d="M12 11.2v5M12 8.2h.02"/>',
+  mail: '<rect x="3.4" y="5.6" width="17.2" height="12.8" rx="2.4"/><path d="M4.2 7l7.8 6.2L19.8 7"/>',
+  code: '<path d="M9 8.2l-4 3.8 4 3.8M15 8.2l4 3.8-4 3.8"/>',
+  drop: '<path d="M12 3.6s5.6 5.7 5.6 9.4a5.6 5.6 0 0 1-11.2 0C6.4 9.3 12 3.6 12 3.6z"/>'
+};
+function ic(name, size = 22, sw = 1.7) {
+  const d = P[name] || '';
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+}
+
+/* ---------------- chrome ---------------- */
+function statusBar() {
+  return `<div class="statusbar">
+    <span>9:41</span>
+    <span class="right">
+      ${ic('signal', 15, 2)}
+      ${ic('wifi', 15, 2)}
+      ${ic('battery', 18, 1.6)}
+    </span>
+  </div>`;
+}
+
+const TABS = [
+  { id: 'home', label: '상태', icon: 'tethering' },
+  { id: 'history', label: '기록', icon: 'history' },
+  { id: 'speed', label: '속도', icon: 'speed' },
+  { id: 'dun', label: 'DUN', icon: 'router' },
+  { id: 'settings', label: '설정', icon: 'settings' }
+];
+
+function navBar(active) {
+  const items = TABS.map(t => `
+    <div class="nav-item ${t.id === active ? 'active' : ''}">
+      <span class="pill">${ic(t.icon, 22, 1.8)}</span>
+      <span class="label">${t.label}</span>
+    </div>`).join('');
+  return `<nav class="navbar">${items}</nav><div class="gesture"><i></i></div>`;
+}
+
+function phone(theme, active, body) {
+  return `<figure class="phone" data-theme="${theme}">
+    ${statusBar()}
+    <div class="viewport">${body}</div>
+    ${navBar(active)}
+  </figure>`;
+}
+
+/* ---------------- screens ---------------- */
+function homeScreen() {
+  return `
+  <header class="appbar">
+    <div class="appbar-row">
+      <div>
+        <div class="t-headline">SpotShift</div>
+        <div class="t-label muted">핫스팟 IP 변환기</div>
+      </div>
+      <button class="icon-btn icon-btn--filled" aria-label="자동 변경 상태">${ic('bolt', 20)}</button>
+    </div>
+  </header>
+
+  <div class="stack">
+    <section class="card card--hero">
+      <div class="card-head">
+        <span class="status-badge"><span class="dot"></span>핫스팟 켜짐</span>
+        <span class="badge badge--primary">자동 변경 ON</span>
+      </div>
+      <div class="ip-row">
+        <span class="t-headline mono">118.235.31.73</span>
+        <span class="icon-btn" style="width:28px;height:28px">${ic('copy', 16)}</span>
+      </div>
+      <div class="t-label muted">공인 IP · KT LTE · RSRP -91dBm</div>
+      <div class="divider"></div>
+      <div class="mini-grid">
+        <div><span class="t-label-s muted">최근 측정</span><span class="t-title-s">0.69 Mbps</span></div>
+        <div><span class="t-label-s muted">속도 기준</span><span class="t-title-s">2 Mbps</span></div>
+        <div><span class="t-label-s muted">온도</span><span class="t-title-s">27.6 °C</span></div>
+      </div>
+    </section>
+
+    <section class="orb-wrap">
+      <div class="orb" style="--p:62">
+        <div class="orb-inner">
+          <div class="t-display">1:47:38</div>
+          <div class="t-label muted">다음 변경까지</div>
+          <div class="orb-chip">14:02 예정</div>
+        </div>
+      </div>
+      <div class="t-label muted center orb-note">2시간마다 · 2Mbps 미만이면 최대 2회 재변경</div>
+    </section>
+
+    <button class="btn btn--filled">${ic('bolt', 20)} IP 변경 시작</button>
+    <div class="t-label muted center">자동 IP 변경 켜짐 · 설정에서 끄기</div>
+
+    <div class="chips">
+      <span class="chip">${ic('battery', 15)} 배터리 84%</span>
+      <span class="chip">${ic('signal', 15)} RSRP -91</span>
+      <span class="chip">${ic('shield', 15)} 가드 ON</span>
+    </div>
+
+    <section class="card">
+      <div class="t-label muted">최근 변경 · 10-21 10:08</div>
+      <div class="ip-change">
+        <span class="mono">39.7.230.35</span>
+        <span class="arrow">${ic('chevron', 16)}</span>
+        <span class="mono">118.235.31.73</span>
+      </div>
+      <div class="t-label muted">데이터 재연결 · 0.69Mbps · 기준 미달</div>
+    </section>
+  </div>`;
+}
+
+function historyScreen() {
+  const item = (lead, tone, title, sub, time, badge, badgeTone, isIp = false) => `
+    <div class="list-row">
+      <span class="lead ${tone}">${ic(lead, 20)}</span>
+      <div class="grow">
+        <div class="t-title-s truncate ${isIp ? 'ip-title' : ''}">${title}</div>
+        <div class="t-label muted truncate">${sub} · ${time}</div>
+      </div>
+      <span class="badge ${badgeTone}">${badge}</span>
+    </div>`;
+
+  return `
+  <header class="appbar">
+    <div class="appbar-row">
+      <div>
+        <div class="t-headline">기록</div>
+        <div class="t-label muted">총 24건 · 최근 7일</div>
+      </div>
+      <button class="text-btn">초기화</button>
+    </div>
+    <div class="seg" style="margin-top:12px">
+      <button class="item active">전체 24</button>
+      <button class="item">성공 21</button>
+      <button class="item">실패 1</button>
+      <button class="item">속도 측정 2</button>
+    </div>
+  </header>
+
+  <div class="stack">
+    <div class="group-label t-label muted">오늘 · 10월 21일</div>
+    <section class="card" style="padding:6px 12px">
+      <div class="list">
+        ${item('check', 'lead--success', '39.7.230.35 → 118.235.31.73', '데이터 재연결 · 0.69Mbps', '10:08', '성공', 'badge--success', true)}
+        ${item('speed', 'lead--primary', '속도 측정 · 0.69Mbps', '다운 0.69 · 업 0.38 · 42ms', '10:08', '측정', 'badge')}
+        ${item('error', 'lead--error', '공인 IP 조회 실패', 'E-AND-NET-0001', '10:07', '실패', 'badge--error')}
+      </div>
+    </section>
+
+    <div class="group-label t-label muted">어제 · 10월 20일</div>
+    <section class="card" style="padding:6px 12px">
+      <div class="list">
+        ${item('check', 'lead--success', '118.235.2.137 → 39.7.230.35', '데이터 재연결 · 3.41Mbps', '22:14', '성공', 'badge--success', true)}
+        ${item('check', 'lead--success', '118.235.13.29 → 118.235.2.137', '데이터 재연결 · 3.41Mbps', '20:12', '성공', 'badge--success', true)}
+        ${item('check', 'lead--success', '39.7.51.11 → 118.235.13.29', '데이터 재연결 · 2.64Mbps', '18:10', '성공', 'badge--success', true)}
+      </div>
+    </section>
+  </div>`;
+}
+
+function speedScreen() {
+  return `
+  <header class="appbar">
+    <div class="appbar-row">
+      <div>
+        <div class="t-headline">속도</div>
+        <div class="t-label muted">현재 접속 · KT LTE</div>
+      </div>
+      <span class="badge badge--success">기준 달성</span>
+    </div>
+  </header>
+
+  <div class="stack">
+    <section class="card card--hero">
+      <div class="card-head">
+        <span class="t-label muted">다운로드</span>
+        <span class="chip chip--tonal" style="height:26px">${ic('wifi', 14)} Wi-Fi 미연결</span>
+      </div>
+      <div class="speed-hero">
+        <span class="t-display">2.42</span>
+        <span class="unit">Mbps</span>
+      </div>
+      <div class="t-label muted">≈ 303 KB/s · 10:08 측정</div>
+      <div class="divider"></div>
+      <div class="speed-grid">
+        <div>
+          <div class="t-label muted">${ic('up', 13)} 업로드</div>
+          <div class="t-title">1.11 Mbps</div>
+        </div>
+        <div>
+          <div class="t-label muted">지연</div>
+          <div class="t-title">38 ms</div>
+        </div>
+      </div>
+    </section>
+
+    <button class="btn btn--filled">${ic('play', 18)} 측정 시작</button>
+
+    <section class="card">
+      <div class="card-head" style="margin-bottom:10px">
+        <span class="t-title">IP 변경 전/후</span>
+        <span class="badge badge--success">기준 2Mbps 달성</span>
+      </div>
+      <div class="compare">
+        <div class="box">
+          <div class="t-label muted">변경 전</div>
+          <div class="t-title-s mono">1.42 Mbps</div>
+        </div>
+        <span class="arrow">${ic('chevron', 18)}</span>
+        <div class="box">
+          <div class="t-label muted">변경 후</div>
+          <div class="t-title-s mono">2.42 Mbps</div>
+        </div>
+      </div>
+      <div class="t-label muted" style="margin-top:10px">자동 재측정 1회 · 기준 미달 시 최대 2회 재변경</div>
+    </section>
+
+    <div class="group-label t-label muted">최근 측정</div>
+    <section class="card" style="padding:6px 12px">
+      <div class="list">
+        <div class="list-row">
+          <span class="lead lead--primary">${ic('down', 20)}</span>
+          <div class="grow">
+            <div class="t-title-s">↓ 2.42 · ↑ 1.11 Mbps</div>
+            <div class="t-label muted">10-21 10:08 · 지연 38ms</div>
+          </div>
+          <button class="icon-btn" style="width:34px;height:34px">${ic('trash', 17)}</button>
+        </div>
+        <div class="list-row">
+          <span class="lead">${ic('down', 20)}</span>
+          <div class="grow">
+            <div class="t-title-s">↓ 0.69 · ↑ 0.38 Mbps</div>
+            <div class="t-label muted">10-21 10:08 · 지연 42ms</div>
+          </div>
+          <button class="icon-btn" style="width:34px;height:34px">${ic('trash', 17)}</button>
+        </div>
+      </div>
+    </section>
+  </div>`;
+}
+
+function dunScreen() {
+  const apn = (selected, name, type) => `
+    <div class="list-row">
+      <span class="lead ${selected ? 'lead--primary' : ''}">${selected ? ic('check', 20) : ic('router', 20)}</span>
+      <div class="grow">
+        <div class="t-title-s">${name}</div>
+        <div class="t-label muted truncate">type=${type}</div>
+      </div>
+      ${selected ? '<span class="badge badge--primary">DUN 포함</span>' : ''}
+    </div>`;
+  return `
+  <header class="appbar">
+    <div class="appbar-row">
+      <div>
+        <div class="t-headline">DUN</div>
+        <div class="t-label muted">테더링 APN 관리</div>
+      </div>
+      <button class="icon-btn icon-btn--filled" aria-label="새로고침">${ic('refresh', 19)}</button>
+    </div>
+  </header>
+
+  <div class="stack">
+    <div class="banner">${ic('check', 20)}<div class="grow t-title-s">Shizuku 연결됨</div><span class="t-label">상태 확인</span></div>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <div class="t-title">DUN 유지</div>
+          <div class="t-label muted" style="margin-top:4px">부팅 후 dun 타입 자동 재적용</div>
+        </div>
+        <span class="switch on"></span>
+      </div>
+    </section>
+
+    <section class="card" style="padding:6px 12px">
+      <div class="card-head" style="padding:14px 0 4px">
+        <span class="t-title">APN 목록</span>
+        <span class="t-label muted">4개</span>
+      </div>
+      <div class="list">
+        ${apn(true, 'KT', 'default,supl,rcs,dun')}
+        ${apn(false, 'KT IA', 'ia')}
+        ${apn(false, 'KT IMS', 'mms,ims')}
+        ${apn(false, 'KT Tethering', 'dun')}
+      </div>
+    </section>
+
+    <div class="btn-row">
+      <button class="btn btn--filled btn--sm">DUN 추가</button>
+      <button class="btn btn--outlined btn--sm">원복</button>
+    </div>
+
+    <div class="banner banner--info" style="align-items:flex-start">
+      ${ic('info', 18)}
+      <div class="t-label" style="line-height:18px">원본 type은 저장되며 언제든 원복할 수 있습니다. 변경 후 재조회로 검증합니다.</div>
+    </div>
+  </div>`;
+}
+
+function settingsScreen() {
+  const switchRow = (title, sub, on) => `
+    <div class="card-head" style="padding:10px 0">
+      <div>
+        <div class="t-title">${title}</div>
+        ${sub ? `<div class="t-label muted" style="margin-top:2px">${sub}</div>` : ''}
+      </div>
+      <span class="switch ${on ? 'on' : ''}"></span>
+    </div>`;
+  const navRow = (icon, title, value) => `
+    <div class="list-row" style="padding:12px 0">
+      <span class="lead">${ic(icon, 19)}</span>
+      <div class="grow t-title-s">${title}</div>
+      <span class="t-label muted">${value}</span>
+      <span class="muted">${ic('chevron', 16)}</span>
+    </div>`;
+
+  return `
+  <header class="appbar">
+    <div class="appbar-row">
+      <div>
+        <div class="t-headline">설정</div>
+        <div class="t-label muted">v0.7.0 · A90</div>
+      </div>
+      <button class="icon-btn icon-btn--filled" aria-label="알림 설정">${ic('bolt', 19)}</button>
+    </div>
+  </header>
+
+  <div class="stack">
+    <section class="card card--hero">
+      <div class="card-head">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span class="lead lead--success">${ic('check', 20)}</span>
+          <div>
+            <div class="t-title">Shizuku 연결됨</div>
+            <div class="t-label muted">셸 권한 정상</div>
+          </div>
+        </div>
+        <button class="text-btn">실행</button>
+      </div>
+    </section>
+
+    <div class="group-label t-label muted">자동 변경</div>
+    <section class="card" style="padding:6px 12px">
+      ${switchRow('자동 IP 변경', '주기마다 자동 실행', true)}
+      <div class="divider" style="margin:10px 0"></div>
+      <div style="padding:4px 0 12px">
+        <div class="card-head" style="padding:0 0 10px">
+          <span class="t-title-s">주기</span>
+          <span class="badge badge--primary">2시간</span>
+        </div>
+        <div class="slider">
+          <span class="track"><span class="fill" style="width:38%"></span></span>
+          <span class="knob" style="left:38%"></span>
+        </div>
+        <div class="slider-row t-label muted"><span>30분</span><span>12시간</span></div>
+      </div>
+      <div class="divider" style="margin:10px 0"></div>
+      ${switchRow('속도 검증', '변경 후 기준 미달 시 재변경', true)}
+      <div style="padding:0 0 14px">
+        <div class="card-head" style="padding:0 0 8px">
+          <span class="t-label muted">기준</span>
+          <span class="t-label">2.0 Mbps · 최대 2회</span>
+        </div>
+        <div class="slider">
+          <span class="track"><span class="fill" style="width:30%"></span></span>
+          <span class="knob" style="left:30%"></span>
+        </div>
+      </div>
+    </section>
+
+    <div class="group-label t-label muted">화면</div>
+    <section class="card" style="padding:6px 16px">
+      <div style="padding:10px 0 4px">
+        <div class="t-title">테마</div>
+        <div class="t-label muted" style="margin:2px 0 10px">시스템 설정을 따르거나 직접 선택</div>
+        <div class="seg" style="margin:0">
+          <button class="item active">시스템</button>
+          <button class="item">라이트</button>
+          <button class="item">다크</button>
+        </div>
+      </div>
+      <div class="divider" style="margin:10px 0"></div>
+      ${switchRow('배경화면 색상 사용', 'Android 12+ 동적 색상', true)}
+    </section>
+
+    <div class="group-label t-label muted">가드</div>
+    <section class="card" style="padding:6px 12px">
+      ${switchRow('온도 가드', '45°C 초과 · thermal 5 연기', true)}
+      <div class="divider" style="margin:6px 0"></div>
+      ${switchRow('전원 감시', '미충전 20% 이하 연기', true)}
+      <div class="divider" style="margin:6px 0"></div>
+      ${switchRow('속도 감시', '주기 외 저속 감지 시 자동 변경', false)}
+    </section>
+
+    <div class="group-label t-label muted">알림</div>
+    <section class="card" style="padding:6px 12px">
+      ${switchRow('부팅 시 자동 시작', '', true)}
+      <div class="divider" style="margin:6px 0"></div>
+      ${switchRow('완료 시 소리 알림', '', true)}
+    </section>
+
+    <div class="group-label t-label muted">연동 · 정보</div>
+    <section class="card" style="padding:6px 12px">
+      ${switchRow('연동 허용', 'RelayConsole 명찰 · autorotate', true)}
+      <div class="divider" style="margin:6px 0"></div>
+      ${navRow('info', '버전', '0.7.0')}
+      ${navRow('mail', '문의 메일', '')}
+      ${navRow('code', 'GitHub', '')}
+    </section>
+  </div>`;
+}
+
+/* ---------------- render ---------------- */
+const SCREENS = [
+  { id: 'home', title: '상태 (Home)', note: '상태 요약→카운트다운 오브→단일 주 액션 순서. CTA는 화면당 1개만 채움색.', fn: homeScreen },
+  { id: 'history', title: '기록 (History)', note: '날짜 그룹 + 필터 칩. 성공/실패는 리딩 아이콘과 배지 이중 부호화(색맹 대응).', fn: historyScreen },
+  { id: 'speed', title: '속도 (Speed)', note: '숫자 중심 히어로. 변경 전/후 비교를 카드로 분리, 재측정 정책을 문장으로 명시.', fn: speedScreen },
+  { id: 'dun', title: 'DUN', note: '권한 상태 배너→유지 토글→APN 목록→액션. 되돌릴 수 있음을 항상 노출.', fn: dunScreen },
+  { id: 'settings', title: '설정 (Settings)', note: '토글·슬라이더를 카드 그룹으로. 위험/가드 항목은 별도 그룹, 정보는 최하단.', fn: settingsScreen }
+];
+
+const only = new URLSearchParams(location.search).get('screen');
+const visible = only ? SCREENS.filter(s => s.id === only) : SCREENS;
+if (only) document.body.classList.add('solo');
+
+document.getElementById('screens').innerHTML = visible.map(s => `
+  <section class="screen-block">
+    <div class="screen-caption"><h3>${s.title}</h3><p>${s.note}</p></div>
+    <div class="pair">
+      <div>
+        <div class="t-label" style="color:#8F9BA7;margin-bottom:8px">LIGHT</div>
+        ${phone('light', s.id, s.fn())}
+      </div>
+      <div>
+        <div class="t-label" style="color:#8F9BA7;margin-bottom:8px">DARK</div>
+        ${phone('dark', s.id, s.fn())}
+      </div>
+    </div>
+  </section>`).join('');
+
+const TOKEN_NAMES = [
+  'primary', 'on-primary', 'primary-container', 'secondary-container',
+  'tertiary-container', 'success', 'success-container', 'error',
+  'error-container', 'surface', 'surface-container-low', 'surface-container-high',
+  'outline', 'outline-variant', 'on-surface', 'on-surface-variant'
+];
+const VALUES = {
+  light: {
+    'primary': '#00639B', 'on-primary': '#FFFFFF', 'primary-container': '#CDE5FF',
+    'secondary-container': '#D2E5F4', 'tertiary-container': '#FFDF9C', 'success': '#146C2E',
+    'success-container': '#A8F5BD', 'error': '#BA1A1A', 'error-container': '#FFDAD6',
+    'surface': '#F7F9FF', 'surface-container-low': '#F1F4FA', 'surface-container-high': '#E5E8EE',
+    'outline': '#71787F', 'outline-variant': '#C1C7CE', 'on-surface': '#181C20', 'on-surface-variant': '#41474E'
+  },
+  dark: {
+    'primary': '#93CCFF', 'on-primary': '#003354', 'primary-container': '#00497A',
+    'secondary-container': '#374956', 'tertiary-container': '#5C4200', 'success': '#8BD99F',
+    'success-container': '#00531F', 'error': '#FFB4AB', 'error-container': '#93000A',
+    'surface': '#0F1318', 'surface-container-low': '#171C21', 'surface-container-high': '#252A30',
+    'outline': '#899098', 'outline-variant': '#3F464D', 'on-surface': '#DFE3E8', 'on-surface-variant': '#BFC6CE'
+  }
+};
+document.getElementById('tokens').innerHTML = [
+  { label: 'LIGHT', theme: 'light' },
+  { label: 'DARK', theme: 'dark' }
+].flatMap(set => TOKEN_NAMES.map(n => `
+  <div class="swatch" data-theme="${set.theme}">
+    <div class="chip-color" style="background:${VALUES[set.theme][n]};${n.startsWith('on-') ? 'border:1px solid rgba(128,128,128,.4);' : ''}"></div>
+    <div class="name">${set.label} · ${n}</div>
+    <div class="val">${VALUES[set.theme][n]}</div>
+  </div>`)).join('');
+</script>
+</body>
+</html>

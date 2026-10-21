@@ -46,6 +46,15 @@ object PluginContract {
     fun remoteInvalid(cmd: String): String =
         "[REMOTE] action=$cmd ok=false errorCode=E-AND-PLG-0002 note=unknown cmd"
 
+    /**
+     * T-52 — 이미 다른 IP 변경이 진행 중이라 요청을 거부했다.
+     * @param detail `busy (source=remote elapsed=3s)` 형태 — 진행 중 작업의 출처와 경과 시간
+     */
+    fun remoteBusy(detail: String): String =
+        "[REMOTE] action=$CMD_AUTOROTATE ok=false errorCode=$ERR_BUSY note=$detail"
+
+    const val ERR_BUSY = "E-AND-PLG-0004"
+
     fun remoteDenied(): String = "[REMOTE] 거부됨 (연동 OFF)"
 
     fun eventIpChanged(id: Long, oldIp: String?, newIp: String?, method: String): String =

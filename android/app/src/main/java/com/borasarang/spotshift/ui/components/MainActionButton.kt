@@ -11,9 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.borasarang.spotshift.ui.theme.SuccessGreen
 
 /**
  * 대형 시작 버튼 (일회성 수동 IP 변경 전용).
@@ -45,9 +43,9 @@ fun MainActionButton(
             .height(56.dp),
         shape = RoundedCornerShape(28.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = if (enabled && !running) SuccessGreen else MaterialTheme.colorScheme.surfaceVariant,
-            contentColor = Color.White,
-            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
             disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
         )
     ) {

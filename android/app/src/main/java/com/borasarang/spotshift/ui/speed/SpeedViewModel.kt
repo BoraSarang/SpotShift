@@ -13,6 +13,7 @@ import com.borasarang.spotshift.core.HotspotController
 import com.borasarang.spotshift.core.IpVerifier
 import com.borasarang.spotshift.core.NetInfo
 import com.borasarang.spotshift.core.RotationEngine
+import com.borasarang.spotshift.core.RotationGate
 import com.borasarang.spotshift.core.ShizukuManager
 import com.borasarang.spotshift.core.SignalMonitor
 import com.borasarang.spotshift.core.SpeedTester
@@ -148,41 +149,56 @@ class SpeedViewModel(app: Application) : AndroidViewModel(app) {
         afterMbps = null
         phase = Phase.CHANGING
         viewModelScope.launch {
-            val cfg = prefs.getConfig()
-            val record = engine.rotate(cfg)
-            if (record.changed && record.newIp != null) {
-                prefs.updateRotationMeta(System.currentTimeMillis(), record.newIp)
-            }
-            if (!record.changed) {
-                DebugLogger.e("속도탭 IP 변경 실패", record.errorCode ?: "E-AND-NET-0002")
+            // T-52 — 진행 중이면 새 요청 거부 (진행 중인 작업은 계속)
+            if (!RotationGate.tryEnter(RotationGate.Source.SPEED_TAB)) {
+                DebugLogger.w("[GATE] 이미 IP 변경 진행 중 — 속도탭 요청 거부 (${RotationGate.describeBusy()})")
                 phase = Phase.DONE
                 return@launch
             }
-            changeCount++
-            // 변경 후 재측정 (다운로드만 — 비교용)
-            liveLabel = "변경 후 재측정 중"
-            phase = Phase.CHANGING
-            val re = tester.download { mbps, bytes ->
-                liveMbps = mbps
-                liveBytes = bytes
+            try {
+                runChange()
+            } finally {
+                RotationGate.exit()
             }
-            if (re.success) {
-                afterMbps = re.mbps
-                val net = currentNet()
-                prefs.addSpeedRecord(
-                    SpeedRecord(
-                        networkType = net.current + " (변경 후)",
-                        downloadMbps = re.mbps?.toFloat(),
-                        bytesUsed = re.bytesUsed,
-                        latencyMs = null,
-                        signal = runCatching {
-                            SignalMonitor(getApplication()).snapshot().display()
-                        }.getOrNull()
-                    )
-                )
-            }
-            phase = Phase.COMPARE
         }
+    }
+
+    /** T-52 — 게이트 획득 후 실행되는 속도 탭 변경 본문 (기존 로직 불변). */
+    private suspend fun runChange() {
+        val cfg = prefs.getConfig()
+        val record = engine.rotate(cfg)
+        if (record.changed && record.newIp != null) {
+            prefs.updateRotationMeta(System.currentTimeMillis(), record.newIp)
+        }
+        if (!record.changed) {
+            DebugLogger.e("속도탭 IP 변경 실패", record.errorCode ?: "E-AND-NET-0002")
+            phase = Phase.DONE
+            return
+        }
+        changeCount++
+        // 변경 후 재측정 (다운로드만 — 비교용)
+        liveLabel = "변경 후 재측정 중"
+        phase = Phase.CHANGING
+        val re = tester.download { mbps, bytes ->
+            liveMbps = mbps
+            liveBytes = bytes
+        }
+        if (re.success) {
+            afterMbps = re.mbps
+            val net = currentNet()
+            prefs.addSpeedRecord(
+                SpeedRecord(
+                    networkType = net.current + " (변경 후)",
+                    downloadMbps = re.mbps?.toFloat(),
+                    bytesUsed = re.bytesUsed,
+                    latencyMs = null,
+                    signal = runCatching {
+                        SignalMonitor(getApplication()).snapshot().display()
+                    }.getOrNull()
+                )
+            )
+        }
+        phase = Phase.COMPARE
     }
 
     fun keepResult() {

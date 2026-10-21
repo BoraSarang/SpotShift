@@ -17,6 +17,7 @@ import com.borasarang.spotshift.core.DataController
 import com.borasarang.spotshift.core.HotspotController
 import com.borasarang.spotshift.core.IpVerifier
 import com.borasarang.spotshift.core.RotationEngine
+import com.borasarang.spotshift.core.RotationGate
 import com.borasarang.spotshift.core.SpeedChecker
 import com.borasarang.spotshift.data.Prefs
 import com.borasarang.spotshift.data.RotationConfig
@@ -51,7 +52,28 @@ class RotationWorker(appContext: Context, params: WorkerParameters) :
         return runRotation(config)
     }
 
+    /** T-52 — 진행 중이면 이번 회차 스킵. 진행 중인 작업은 그대로 계속된다. */
     private suspend fun runRotation(config: RotationConfig): Result {
+        if (!RotationGate.tryEnter(RotationGate.Source.SCHEDULED)) {
+            DebugLogger.w("[GATE] 다른 IP 변경 진행 중 — 주기 회차 스킵 (${RotationGate.describeBusy()})")
+            Prefs(applicationContext).addRecord(
+                RotationRecord(
+                    changed = false,
+                    method = RotationRecord.METHOD_NONE,
+                    note = "스킵: 다른 IP 변경 작업 진행 중",
+                    errorCode = "E-AND-SCH-0006"
+                )
+            )
+            return Result.success()
+        }
+        return try {
+            runRotationInternal(config)
+        } finally {
+            RotationGate.exit()
+        }
+    }
+
+    private suspend fun runRotationInternal(config: RotationConfig): Result {
         val ctx = applicationContext
         val prefs = Prefs(ctx)
         val conditions = Conditions(ctx)

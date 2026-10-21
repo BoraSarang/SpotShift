@@ -4,6 +4,8 @@
 
 ## v0.5.1 — 2026-10-06 — 속도 탭 업로드 실패 수정 [android] (미릴리즈)
 
+- **추가 (T-47, UI 기반)**: 디자인 토큰 v2 — MD3 시맨틱 role 전체(라이트/다크) + 성공/경고 전용 `SpotColors`(`LocalSpotColors` CompositionLocal), `Shapes`(extraLarge 28dp)·`Typography`(MD3 스케일, 숫자 tabular-nums). 테마 모드 `SYSTEM/LIGHT/DARK` + Android 12+ 동적 색상 토글(끄면 시드 #0E7BC4 정적 팔레트). 설정 "화면" 섹션 신규, `enableEdgeToEdge()` 적용 + 시스템바 아이콘 밝기를 테마에 맞춤. 성공 상태를 `secondary`로 표현하던 9곳을 `SpotColors.success`로, 카드 배경을 `surface`→`surfaceContainerLow`로 치환. Compose BOM 2024.09.03(Material3 1.3.0)은 `MaterialExpressiveTheme`/`MotionScheme` 미제공 → `MaterialTheme`+정적 토큰으로 구현. **A90 실측 통과 (TC-19~23)**: 시스템 다크↔라이트 전환이 재시작 없이 즉시 반영(`dark=false`→`dark=true`, 동일 PID), 설정 고정 테마가 `force-stop` 후 재시작에도 유지, 동적 색상 OFF/ON 시 정적(`#93CCFF`)↔동적(`#76D1FF`) 전환(success/warning은 정적 유지), 글자 크기 1.3x에서 잘림 0(홈 스크롤로 주 액션 버튼 도달, 설정 세그먼트 3버튼 정상), 5탭 전부 순회 ERROR 0·크래시 0, 카운트다운 `1:36:13`↔`14:59 예정` 일치
+
 - **수정 (T-45)**: 수동 IP 변경이 "자동 IP 변경" 토글을 켜 버리던 버그 — 홈 메인 버튼이 `HomeViewModel.setEnabled(true/false)`를 함께 호출해, 사용자가 꺼 둔 자동 주기가 수동 변경 1회마다 되살아났다 (v0.2 FGS 시작/정지 버튼의 잔재). 버튼은 일회성 `manualRotate`만 수행하고, 자동 On/Off는 설정 토글·퀵세팅 타일만 조작한다. 회전 중에는 취소 대신 비활성("IP 변경 중…") — `DataController.toggleCycle`의 disable→enable 사이에서 취소되면 모바일 데이터가 꺼진 채 남는 위험 차단. 홈에 자동 변경 상태 문구 추가. **A90 실측 통과 (TC-18)**: 설정에서 자동 OFF(`setEnabled=false (자동 주기)` + 스케줄 취소) → 홈 "IP 변경 시작" → `manualRotate 시작 (자동 주기 미변경, 현재 자동=false)` → IP `118.235.13.29→118.235.2.137` 변경 성공·속도 3.41Mbps 달성(기준 2) → 이후 `setEnabled` 로그 0건, 앱 재시작에도 `자동 IP 변경 ON` 로그 없음(= False 유지·주기 미등록), 회전 중 버튼 라벨 "IP 변경 중…" 확인, ERROR 0·크래시 0
 - **부수 정리 (A90 기준)**: `build_and_run.sh`·`scripts/spotshift_status.sh`에 A90(SM-A908N) 자동 탐색 + `-s` 명시(2대 연결 시 `more than one device` 방지), README/README.ko/landing/PRD의 검증 기기 문구를 A90으로 갱신
 - **실기기 범위 확정**: **A90(SM-A908N, Android 12 / API 31) 단독** — S22는 2026-10-11부터 검증 대상 제외 (기록만 유지)
@@ -26,6 +28,8 @@
 - **수정 (T-29)**: 저속 업링크(약 1.1Mbps, KT LTE 실측)에서 속도 측정 → 업로드가 30초 안에 4MB 전량 전송+서버 200 확답을 못 받아 `E-AND-NET-0004` 실패로 끝나던 문제. `SpeedTester.upload` 성공 조건을 `전송>0 또는 서버확답` → `전송>0`으로 완화, 확답 없으면 전송 바이트/벽시계 추정값으로 성공 처리 (로그에 확정/추정 구분). 전송 0B일 때만 실패 유지
 - 원인 확정: 기기 셸 직접 측정 — `__down` 200(1MB/2.4s)·`__up` 빈 POST 200·256KB POST 200(1.9s, ≈1.1Mbps) 전부 정상, 앱 4병렬×1MB는 파이프 공유로 30초 경계에 걸려 실패. 구 0.3.1 설치분이기도 했음(코드 0.5.0, 기기 0.3.1) → 0.5.0 재설치 후에도 재현되어 근본 수정
 - 검증: `./gradlew assembleDebug` 성공, S22 실검증 — 속도 탭 측정 완료 ↓2.42Mbps ↑1.11Mbps(확정, 4194304B/30264ms) → 기록 저장, ERROR 0
+
+- **수정 (T-52)**: 외부 IP 변경 요청 동시성 — **진행 중이면 새 요청 즉시 거부, 진행 중 작업은 계속**. `core/RotationGate`(단일 실행 게이트, 리스 10분 만료)를 수동·속도탭·주기·감시·원격 5경로가 공유. 원격 수신기는 접수/거부만 하고 실행은 `RemoteRotationWorker`(expedited, unique `KEEP`)로 위임 — v2까지 `goAsync` 직접 실행이 회전 30~100초로 브로드캐스트 타임아웃을 넘겨 **ANR → 프로세스 킬**(`am_anr ... PLUGIN_ACTION`, 2026-10-21 13:51:04)로 실측됐다. 거부 응답 `E-AND-PLG-0004 note=busy (source=… elapsed=…s)`, 주기 스킵은 `E-AND-SCH-0006` 기록. **A90 실측**: 첫 요청 2초 후 두 번째 요청 → BUSY 즉시 응답(`elapsed=2s`)·첫 요청은 정상 완료(`118.235.2.56→118.235.68.157`, 2.68Mbps), 이후 ANR 0·data ON·ERROR 0. 연동 계약 문서 `docs/PLUGIN_CONTRACT.md`에 v2.1로 기록(응답 형식 불변)
 
 ## v0.5.0 — 2026-10-06 — 스케줄러 WorkManager 이관 + 속도 탭 [android] (릴리즈)
 

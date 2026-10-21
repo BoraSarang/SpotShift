@@ -13,11 +13,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -42,6 +44,8 @@ import com.borasarang.spotshift.BuildConfig
 import com.borasarang.spotshift.DebugLogger
 import com.borasarang.spotshift.core.ShizukuManager
 import com.borasarang.spotshift.ui.home.HomeViewModel
+import com.borasarang.spotshift.ui.theme.ThemeMode
+import com.borasarang.spotshift.ui.theme.LocalSpotColors
 
 @Composable
 fun SettingsScreen(contentPadding: PaddingValues) {
@@ -60,6 +64,10 @@ fun SettingsScreen(contentPadding: PaddingValues) {
     val powerGuard by viewModel.powerGuard.collectAsState()
     // T-42 — 속도 감시 토글
     val speedWatch by viewModel.speedWatch.collectAsState()
+    // T-47 — 테마 모드 / 동적 색상
+    val themeModeKey by viewModel.themeMode.collectAsState()
+    val dynamicColor by viewModel.dynamicColor.collectAsState()
+    val canUseDynamicColor = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S
     val context = LocalContext.current
 
     // v0.4 — 시스템 설정에서 돌아오면 배터리 상태 갱신
@@ -100,8 +108,8 @@ fun SettingsScreen(contentPadding: PaddingValues) {
     ) {
         SectionTitle("Shizuku")
         Surface(
-            shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.surface
+            shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.surfaceContainerLow
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Row(
@@ -113,7 +121,7 @@ fun SettingsScreen(contentPadding: PaddingValues) {
                         text = if (shizukuReady) "연결됨" else "연결 필요",
                         style = MaterialTheme.typography.titleMedium,
                         color = if (shizukuReady) {
-                            MaterialTheme.colorScheme.secondary
+                            LocalSpotColors.current.success
                         } else {
                             MaterialTheme.colorScheme.error
                         },
@@ -152,8 +160,8 @@ fun SettingsScreen(contentPadding: PaddingValues) {
         // v0.4 — 배터리 최적화 제외 (삼성 백그라운드 종료 방지)
         SectionTitle("배터리")
         Surface(
-            shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.surface
+            shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.surfaceContainerLow
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Row(
@@ -165,7 +173,7 @@ fun SettingsScreen(contentPadding: PaddingValues) {
                         text = if (batteryUnrestricted) "제한 없음" else "최적화 중",
                         style = MaterialTheme.typography.titleMedium,
                         color = if (batteryUnrestricted) {
-                            MaterialTheme.colorScheme.secondary
+                            LocalSpotColors.current.success
                         } else {
                             // v0.4 — 최적화 중은 기본 상태라 실패색 대신 중립색
                             MaterialTheme.colorScheme.onSurfaceVariant
@@ -194,10 +202,63 @@ fun SettingsScreen(contentPadding: PaddingValues) {
             }
         }
 
+        SectionTitle("화면")
+        Surface(
+            shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.surfaceContainerLow
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text("테마", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    "시스템 설정을 따르거나 라이트/다크를 직접 선택합니다.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(12.dp))
+                // T-47 — 테마 모드 (시스템/라이트/다크)
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    ThemeMode.entries.forEachIndexed { index, mode ->
+                        SegmentedButton(
+                            selected = ThemeMode.fromKey(themeModeKey) == mode,
+                            onClick = { viewModel.updateThemeMode(mode.name) },
+                            shape = SegmentedButtonDefaults.itemShape(
+                                index = index,
+                                count = ThemeMode.entries.size
+                            ),
+                            label = { Text(mode.label) }
+                        )
+                    }
+                }
+                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                // T-47 — 동적 색상 (Android 12+)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("배경화면 색상 사용", style = MaterialTheme.typography.bodyLarge)
+                    Switch(
+                        checked = dynamicColor,
+                        enabled = canUseDynamicColor,
+                        onCheckedChange = { viewModel.updateDynamicColor(it) }
+                    )
+                }
+                Text(
+                    if (canUseDynamicColor) {
+                        "배경화면 색에서 앱 색을 생성합니다. 끄면 SpotShift 기본 팔레트를 사용합니다."
+                    } else {
+                        "Android 12 이상에서 사용할 수 있습니다. 기본 팔레트를 사용합니다."
+                    },
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
         SectionTitle("주기")
         Surface(
-            shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.surface
+            shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.surfaceContainerLow
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
@@ -225,8 +286,8 @@ fun SettingsScreen(contentPadding: PaddingValues) {
         // v0.4 — 속도 기반 조건부 실행
         SectionTitle("속도 검증")
         Surface(
-            shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.surface
+            shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.surfaceContainerLow
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text("변경 후 속도 검증", style = MaterialTheme.typography.bodyLarge)
@@ -268,8 +329,8 @@ fun SettingsScreen(contentPadding: PaddingValues) {
 
         SectionTitle("IP 변경")
         Surface(
-            shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.surface
+            shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.surfaceContainerLow
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 // v0.2 — 요구사항 5: IP 변경 여부 (자동 스케줄)
@@ -484,8 +545,8 @@ fun SettingsScreen(contentPadding: PaddingValues) {
         Spacer(Modifier.height(16.dp))
         SectionTitle("문의")
         Surface(
-            shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.surface
+            shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.surfaceContainerLow
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 AboutRow(label = "제작자", value = "BoRaSaRang")

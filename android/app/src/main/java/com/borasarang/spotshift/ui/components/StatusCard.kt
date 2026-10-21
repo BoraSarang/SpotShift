@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.WifiTethering
 import androidx.compose.material3.Icon
@@ -19,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.borasarang.spotshift.ui.theme.LocalSpotColors
 
 /**
  * 핫스팟/네트워크 상태 카드.
@@ -36,13 +36,13 @@ fun StatusCard(
     // v0.4 (T-19) — 접속 상태 표시 (null이면 숨김)
     signalText: String? = null
 ) {
-    val statusColor = if (hotspotEnabled) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.error
+    val statusColor = if (hotspotEnabled) LocalSpotColors.current.success else MaterialTheme.colorScheme.error
     val statusText = if (hotspotEnabled) "핫스팟 켜짐" else "핫스팟 꺼짐"
 
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surface
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.surfaceContainerLow
     ) {
         Row(
             modifier = Modifier.padding(20.dp),
@@ -94,7 +94,7 @@ fun StatusCard(
                     Text(
                         text = lastSpeedText,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.secondary
+                        color = LocalSpotColors.current.success
                     )
                 }
                 if (signalText != null) {

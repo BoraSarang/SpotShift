@@ -18,8 +18,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
-import com.borasarang.spotshift.ui.theme.AccentSky
-import com.borasarang.spotshift.ui.theme.SurfaceMuted
 import java.util.Locale
 
 /**
@@ -32,7 +30,7 @@ fun CountdownGauge(
     remainingSeconds: Long,
     totalSeconds: Long,
     modifier: Modifier = Modifier,
-    gaugeColor: Color = AccentSky,
+    gaugeColor: Color? = null,
     nextChangeAtLabel: String? = null
 ) {
     val progress by animateFloatAsState(
@@ -43,6 +41,8 @@ fun CountdownGauge(
         label = "countdown_progress"
     )
     val remainingText = formatRemaining(remainingSeconds)
+    val progressColor = gaugeColor ?: MaterialTheme.colorScheme.primary
+    val trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
 
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         Canvas(modifier = Modifier.size(200.dp)) {
@@ -52,7 +52,7 @@ fun CountdownGauge(
             val topLeft = Offset(inset, inset)
 
             drawArc(
-                color = SurfaceMuted,
+                color = trackColor,
                 startAngle = -90f,
                 sweepAngle = 360f,
                 useCenter = false,
@@ -61,7 +61,7 @@ fun CountdownGauge(
                 style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
             )
             drawArc(
-                color = gaugeColor,
+                color = progressColor,
                 startAngle = -90f,
                 sweepAngle = 360f * progress,
                 useCenter = false,
@@ -74,7 +74,7 @@ fun CountdownGauge(
             Text(
                 text = remainingText,
                 style = MaterialTheme.typography.displaySmall,
-                color = MaterialTheme.colorScheme.onBackground
+                color = MaterialTheme.colorScheme.onSurface
             )
             // v0.3 — 예상 시각 병기: "다음 변경까지 · 14:02 예정"
             Text(

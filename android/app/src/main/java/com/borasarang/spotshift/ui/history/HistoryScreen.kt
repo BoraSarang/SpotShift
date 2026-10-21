@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowForward
 import androidx.compose.material3.AlertDialog
@@ -36,6 +35,7 @@ import com.borasarang.spotshift.ui.home.HomeViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import com.borasarang.spotshift.ui.theme.LocalSpotColors
 
 @Composable
 fun HistoryScreen(contentPadding: PaddingValues) {
@@ -113,15 +113,15 @@ fun HistoryScreen(contentPadding: PaddingValues) {
 private fun RecordItem(record: RotationRecord) {
     val dateFormat = remember { SimpleDateFormat("MM-dd HH:mm:ss", Locale.KOREA) }
     val statusColor = when {
-        record.changed -> MaterialTheme.colorScheme.secondary
+        record.changed -> LocalSpotColors.current.success
         record.errorCode != null -> MaterialTheme.colorScheme.error
         // v0.4 — 스킵 기록(note)은 실패가 아니므로 중립색
         record.note != null -> MaterialTheme.colorScheme.onSurfaceVariant
         else -> MaterialTheme.colorScheme.error
     }
     Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surface
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.surfaceContainerLow
     ) {
         Row(
             modifier = Modifier

@@ -9,7 +9,7 @@ Android 단독 네이티브 앱 (Kotlin + Compose, 무루트/Shizuku, 서버 없
 
 ```bash
 export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home
-cd android && ./gradlew assembleDebug --no-daemon    # 디버그 빌드 (wrapper 8.9 필수, system gradle 금지)
+cd android && ./gradlew assembleDebug --no-daemon    # 디버그 빌드 (wrapper 8.11.1 필수, system gradle 금지)
 cd android && ./gradlew assembleRelease --no-daemon  # 릴리즈 (android/local.properties의 keystore.* + keystore/release.jks 필요, 둘 다 gitignore)
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb shell am start -n com.borasarang.spotshift/.MainActivity

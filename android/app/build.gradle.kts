@@ -60,7 +60,7 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.8.2")
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
-    implementation(platform("androidx.compose:compose-bom:2024.09.03"))
+    implementation(platform("androidx.compose:compose-bom:2025.10.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")

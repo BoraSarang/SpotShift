@@ -156,6 +156,9 @@ enum class ThemeMode { SYSTEM, LIGHT, DARK }          // Prefs.themeMode (키별
 > **버전 주의**: 현재 BOM `2024.09.03`. Expressive API(`MaterialExpressiveTheme`/`MotionScheme`)는 Material3 1.4+ 필요 → 구현 첫 단계에서 실제 사용 가능한 최신 BOM을 Gradle 메타데이터로 **확인 후** 고정한다 (추측 금지). 미지원이면 `MaterialTheme` + 정적 토큰으로 동일 목업 구현.
 
 > **실측 결과 (T-47, 2026-10-21)**: BOM `2024.09.03` = **Material3 1.3.0** → `MaterialExpressiveTheme`·`MotionScheme`·`LoadingIndicator` **미제공**(컴파일 불가). 따라서 `MaterialTheme(colorScheme, typography, shapes)` + 정적 토큰(`Color.kt`/`Shapes.kt`/`Type.kt`)으로 구현했고, 모션은 Compose 기본 `animateFloatAsState`/`tween`을 유지한다. Expressive 전환은 BOM 상향(1.4+/Material3 1.4) 시 T-47 후속 과제로 재검토 — 상향 시 `material3` API 변경(alpha)과 AGP/Kotlin 정합 확인 필요.
+>
+> **상향 완료 (T-53, 2026-10-21)**: BOM `2025.10.00` = **Compose 1.9.3 / Material3 1.4.0**, AGP 8.9.2 / Gradle 8.11.1 / Kotlin 2.1.21, **compileSdk 35 유지**.
+> 이제 `MaterialExpressiveTheme`·`MotionScheme` 사용 가능. 단, 현 테마는 커스텀 시맨틱 토큰 + `MaterialTheme`이므로 화면 무변경을 위해 **당분간 기존 구성을 유지**하고, Expressive 도입은 별도 디자인 결정(T-54)으로 분리한다.
 
 
 ## 8. 접근성

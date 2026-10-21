@@ -29,12 +29,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -52,6 +53,7 @@ import com.borasarang.spotshift.ui.components.RotationProgress
 import com.borasarang.spotshift.ui.components.StatusCard
 import com.borasarang.spotshift.ui.theme.LocalSpotColors
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * T-48 — 홈(상태) 화면. 목업 `docs/design/mockup_v2.html?screen=home` 순서를 따른다.
@@ -71,7 +73,8 @@ fun HomeScreen(contentPadding: PaddingValues) {
     val viewModel: HomeViewModel = viewModel()
     val config by viewModel.config.collectAsState()
     val context = LocalContext.current
-    val clipboard = LocalClipboardManager.current
+    val clipboard = LocalClipboard.current
+    val clipboardScope = rememberCoroutineScope()
 
     val hotspotController = remember { HotspotController(context) }
     val thermalGuard = remember { ThermalGuard(context) }
@@ -189,7 +192,11 @@ fun HomeScreen(contentPadding: PaddingValues) {
             thresholdText = thresholdLabel,
             temperatureText = temperatureC?.let { "%.1f °C".format(it) },
             onCopyIp = { ip ->
-                clipboard.setText(AnnotatedString(ip))
+                clipboardScope.launch {
+                    clipboard.setClipEntry(
+                        ClipEntry(android.content.ClipData.newPlainText("IP", ip))
+                    )
+                }
                 Toast.makeText(context, "IP를 복사했습니다", Toast.LENGTH_SHORT).show()
             }
         )

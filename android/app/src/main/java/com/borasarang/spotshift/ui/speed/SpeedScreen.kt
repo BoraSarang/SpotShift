@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -33,6 +32,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.borasarang.spotshift.data.RotationPhase
 import com.borasarang.spotshift.ui.components.formatMbps
 import com.borasarang.spotshift.ui.components.formatRate
+import com.borasarang.spotshift.ui.theme.LocalSpotColors
 
 /**
  * v0.5 (T-27) — 속도 탭. fast.com식 실시간 측정 + 미달 시 즉시 IP 변경 → 재측정 비교.
@@ -64,7 +64,7 @@ fun SpeedScreen(contentPadding: PaddingValues) {
 
         Spacer(Modifier.height(16.dp))
         // 접속 상태
-        Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surface) {
+        Surface(shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceContainerLow) {
             Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
                 Text("현재 접속: ${net.current}", style = MaterialTheme.typography.titleMedium)
                 Text(
@@ -147,7 +147,7 @@ fun SpeedScreen(contentPadding: PaddingValues) {
                     Text(
                         if (below) "기준(${threshold}Mbps) 미달" else "기준 달성",
                         color = if (below) MaterialTheme.colorScheme.error
-                        else MaterialTheme.colorScheme.secondary
+                        else LocalSpotColors.current.success
                     )
                 } else {
                     Text(
@@ -196,7 +196,7 @@ fun SpeedScreen(contentPadding: PaddingValues) {
         // 전/후 비교
         if (vm.phase == SpeedViewModel.Phase.COMPARE) {
             Spacer(Modifier.height(16.dp))
-            Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surface) {
+            Surface(shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceContainerLow) {
                 Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
                     Text(
                         "변경 전 ${vm.beforeMbps?.let { formatMbps(it) } ?: "-"} → " +
@@ -240,8 +240,8 @@ fun SpeedScreen(contentPadding: PaddingValues) {
         } else {
             records.forEach { r ->
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.surface,
+                    shape = MaterialTheme.shapes.medium,
+                    color = MaterialTheme.colorScheme.surfaceContainerLow,
                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
                 ) {
                     Row(

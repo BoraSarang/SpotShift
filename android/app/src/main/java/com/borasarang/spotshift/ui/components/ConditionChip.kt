@@ -16,9 +16,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import com.borasarang.spotshift.ui.theme.LocalSpotColors
 
 /**
  * 스케줄 조건 상태 칩.
+ *
+ * T-47 — 충족 상태는 중립(tonal)으로 두고, 미충족만 경고색으로 강조한다.
+ * (전부 초록이면 "조건 3개 = 성공 3개"처럼 읽혀 상태 의미가 흐려짐 — 목업 v2와 일치)
  */
 @Composable
 fun ConditionChip(
@@ -27,11 +31,20 @@ fun ConditionChip(
     icon: ImageVector,
     modifier: Modifier = Modifier
 ) {
-    val color = if (satisfied) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.error
+    val container = if (satisfied) {
+        MaterialTheme.colorScheme.surfaceContainerHighest
+    } else {
+        LocalSpotColors.current.warningContainer
+    }
+    val content = if (satisfied) {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    } else {
+        LocalSpotColors.current.onWarningContainer
+    }
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(50),
-        color = color.copy(alpha = 0.12f)
+        color = container
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
@@ -41,13 +54,13 @@ fun ConditionChip(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = color,
+                tint = content,
                 modifier = Modifier.size(16.dp)
             )
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelMedium,
-                color = color
+                color = content
             )
         }
     }

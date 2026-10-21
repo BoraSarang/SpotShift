@@ -256,6 +256,23 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         WatchdogSchedule.sync(getApplication(), cfg.enabled, v, cfg.intervalMinutes)
     }
 
+    // T-47 — 화면 테마 (SYSTEM|LIGHT|DARK) + 동적 색상
+    val themeMode: StateFlow<String> = prefs.themeModeFlow
+        .stateIn(viewModelScope, SharingStarted.Eagerly, Prefs.THEME_MODE_SYSTEM)
+
+    fun updateThemeMode(mode: String) = launchUpdate {
+        prefs.updateThemeMode(mode)
+        DebugLogger.feature("HomeViewModel", "테마 모드=$mode")
+    }
+
+    val dynamicColor: StateFlow<Boolean> = prefs.dynamicColorFlow
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+
+    fun updateDynamicColor(v: Boolean) = launchUpdate {
+        prefs.updateDynamicColor(v)
+        DebugLogger.feature("HomeViewModel", "동적 색상=$v")
+    }
+
     private fun launchUpdate(block: suspend () -> Unit) {
         viewModelScope.launch { block() }
     }

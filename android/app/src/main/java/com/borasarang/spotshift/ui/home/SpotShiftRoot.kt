@@ -3,7 +3,6 @@ package com.borasarang.spotshift.ui.home
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -23,6 +22,7 @@ import androidx.compose.material.icons.outlined.Router
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Speed
 import androidx.compose.material.icons.outlined.WifiTethering
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -39,6 +39,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.safeDrawing
@@ -142,12 +143,15 @@ private fun ColumnScope.RailSpacer() {
     Spacer(Modifier.weight(1f))
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun TabContent(
     selectedTab: Int,
     contentPadding: PaddingValues,
     animationsEnabled: Boolean
 ) {
+    // transitionSpec 람다는 컴포지션이 아니므로 여기서 읽어 캡처한다
+    val motion = MaterialTheme.motionScheme
     AnimatedContent(
         targetState = selectedTab,
         transitionSpec = {
@@ -155,11 +159,12 @@ private fun TabContent(
                 EnterTransition.None togetherWith ExitTransition.None
             } else {
                 val direction = if (targetState > initialState) 1 else -1
-                (fadeIn(animationSpec = tween(200)) +
+                // T-54 — MotionScheme 토큰 사용 (expressive/standard는 테마에서 주입)
+                (fadeIn(animationSpec = motion.fastEffectsSpec<Float>()) +
                     slideInHorizontally(
-                        animationSpec = tween(200),
+                        animationSpec = motion.fastSpatialSpec<IntOffset>(),
                         initialOffsetX = { it / 12 * direction }
-                    )) togetherWith fadeOut(animationSpec = tween(120))
+                    )) togetherWith fadeOut(animationSpec = motion.fastEffectsSpec<Float>())
             }
         },
         label = "tab"

@@ -544,7 +544,8 @@ private fun SpeedRecordRow(record: SpeedRecord, onDelete: () -> Unit) {
                 maxLines = 1
             )
         }
-        IconButton(onClick = onDelete, modifier = Modifier.size(40.dp)) {
+        // T-56 — 48dp 기본 터치 타깃 유지
+        IconButton(onClick = onDelete, modifier = Modifier.size(48.dp)) {
             Icon(
                 imageVector = Icons.Outlined.Delete,
                 contentDescription = "측정 기록 삭제",

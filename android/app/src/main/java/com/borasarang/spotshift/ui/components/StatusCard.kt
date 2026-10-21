@@ -96,7 +96,8 @@ fun StatusCard(
                     Spacer(Modifier.width(4.dp))
                     IconButton(
                         onClick = { onCopyIp(publicIp) },
-                        modifier = Modifier.size(40.dp)
+                        // T-56 — 48dp 기본 터치 타깃 유지 (축소 금지)
+                        modifier = Modifier.size(48.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.ContentCopy,

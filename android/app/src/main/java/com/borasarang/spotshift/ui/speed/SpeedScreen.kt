@@ -42,6 +42,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.borasarang.spotshift.core.NetInfo
@@ -309,7 +310,11 @@ private fun SpeedHeroCard(
                     )
                 }
             }
-            Row(verticalAlignment = Alignment.Bottom) {
+            Row(
+                // 화면 낭독기가 "2.03 Mbps"를 한 문장으로 읽도록 병합
+                modifier = Modifier.semantics(mergeDescendants = true) {},
+                verticalAlignment = Alignment.Bottom
+            ) {
                 if (display == null) {
                     Text(
                         text = "측정 전",
@@ -539,7 +544,7 @@ private fun SpeedRecordRow(record: SpeedRecord, onDelete: () -> Unit) {
                 maxLines = 1
             )
         }
-        IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
+        IconButton(onClick = onDelete, modifier = Modifier.size(40.dp)) {
             Icon(
                 imageVector = Icons.Outlined.Delete,
                 contentDescription = "측정 기록 삭제",

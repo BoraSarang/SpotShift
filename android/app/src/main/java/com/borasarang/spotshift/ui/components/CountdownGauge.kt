@@ -27,6 +27,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.borasarang.spotshift.ui.theme.full
+import com.borasarang.spotshift.ui.util.rememberAnimationsEnabled
 import java.util.Locale
 
 /**
@@ -52,7 +53,12 @@ fun CountdownGauge(
         } else {
             0f
         },
-        animationSpec = tween(durationMillis = 1000, easing = LinearEasing),
+        // T-51 — 시스템 "애니메이션 제거"면 즉시 값만 갱신
+        animationSpec = if (rememberAnimationsEnabled()) {
+            tween(durationMillis = 1000, easing = LinearEasing)
+        } else {
+            tween(durationMillis = 0)
+        },
         label = "countdown_progress"
     )
     val remainingText = formatRemaining(remainingSeconds)

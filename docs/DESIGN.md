@@ -83,6 +83,9 @@ data class RotationConfig(
 
 ## 4. 디자인 시스템 (ui-ux-pro-max 리서치 결과)
 
+> **v2 리디자인(라이트/다크, MD3 Expressive) 확정안**: `docs/design/REDESIGN_v2.md` + 목업 `docs/design/mockup_v2.html`.
+> 아래 v1 기록은 이력으로만 유지한다 (다크 OLED 단일 테마).
+
 - **패턴**: VPN & Privacy Tool (NordVPN류) — Connection-focused 대시보드
 - **스타일**: Minimalism & Swiss Style + Dark Mode (OLED)
 - **컬러 토큰** (Material 3):

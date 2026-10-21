@@ -3,17 +3,13 @@ package com.borasarang.spotshift.receiver
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import com.borasarang.spotshift.core.AirplaneController
-import com.borasarang.spotshift.core.DataController
-import com.borasarang.spotshift.core.HotspotController
-import com.borasarang.spotshift.core.IpVerifier
-import com.borasarang.spotshift.core.RotationEngine
+import com.borasarang.spotshift.DebugLogger
+import com.borasarang.spotshift.core.RotationGate
 import com.borasarang.spotshift.core.ShizukuManager
-import com.borasarang.spotshift.core.SpeedChecker
 import com.borasarang.spotshift.data.Prefs
-import com.borasarang.spotshift.data.RotationRecord
 import com.borasarang.spotshift.plugin.PluginContract
 import com.borasarang.spotshift.plugin.PluginLog
+import com.borasarang.spotshift.scheduler.RemoteRotationWorker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -24,8 +20,12 @@ import kotlinx.coroutines.launch
  *   adb shell am broadcast -a com.borasarang.spotshift.PLUGIN_ACTION --es cmd autorotate
  *
  * 브로드캐스트라 UI 전면 전환 없음 (v1 MainActivity 경로는 SDK §4.3에 따라 제거).
- * 결과는 v2 [REMOTE] 한 줄로만 보고한다. HomeViewModel.manualRotate와 동일 루프의
- * 헤드리스 복제 (수동 경로를 건드리지 않기 위한 의도적 분리).
+ *
+ * T-52 — 수신기는 **접수/거부만** 한다:
+ * - 이미 다른 IP 변경이 진행 중이면 즉시 `E-AND-PLG-0004` BUSY 한 줄로 거부 (진행 중 작업은 계속).
+ * - 아니면 게이트를 선점하고 [RemoteRotationWorker]에 실행을 위임한 뒤 즉시 반환.
+ *   (v2까지 goAsync로 직접 회전 → 30~100초 소요로 브로드캐스트 타임아웃 ANR 실측)
+ * 결과는 워커가 계약 §5 `[REMOTE]` 한 줄로 보고한다.
  */
 class PluginActionReceiver : BroadcastReceiver() {
 
@@ -60,69 +60,20 @@ class PluginActionReceiver : BroadcastReceiver() {
             PluginLog.remote(PluginContract.remoteDenied())
             return
         }
-        val engine = RotationEngine(
-            context = context,
-            dataController = DataController(),
-            airplaneController = AirplaneController(context),
-            hotspotController = HotspotController(context),
-            ipVerifier = IpVerifier()
-        )
-        val speedChecker = SpeedChecker()
-        val threshold = cfg.speedThresholdMbps
-        val maxAttempts = cfg.speedMaxRechecks.coerceAtLeast(1)
-        var attempt = 0
-        while (attempt < maxAttempts) {
-            attempt++
-            val base = engine.rotate(cfg)
-            engine.notifySpeedChecking()
-            val speed = speedChecker.measure()
-            if (speed.success && speed.mbps != null) {
-                prefs.updateLastSpeed(speed.mbps.toFloat())
-                val label = "%.2f".format(speed.mbps)
-                prefs.addRecord(
-                    RotationRecord(
-                        changed = false,
-                        method = RotationRecord.METHOD_SPEED_CHECK,
-                        note = "측정 ${label}Mbps"
-                    )
-                )
-                if (speed.mbps >= threshold) {
-                    finishAction(prefs, base, speed.mbps, "측정 ${label}Mbps ≥ 기준 ${threshold}Mbps — 달성")
-                    return
-                }
-                if (attempt >= maxAttempts) {
-                    finishAction(prefs, base, speed.mbps, "측정 ${label}Mbps < 기준 ${threshold}Mbps — 기준 미달 (IP 변경은 완료)")
-                    return
-                }
-                prefs.addRecord(base.copy(note = "측정 ${label}Mbps < 기준 ${threshold}Mbps — 재변경 ${attempt}/${maxAttempts}"))
-                if (base.changed && base.newIp != null) {
-                    prefs.updateRotationMeta(System.currentTimeMillis(), base.newIp)
-                }
-                continue
-            }
-            finishAction(prefs, base, null, base.errorCode ?: base.note ?: "E-AND-NET-0004")
+        // T-52 — 진행 중이면 즉시 BUSY 응답 (진행 중인 작업은 그대로 계속)
+        if (!RotationGate.tryEnter(RotationGate.Source.REMOTE)) {
+            DebugLogger.w("[GATE] 이미 IP 변경 진행 중 — 원격 요청 거부 (${RotationGate.describeBusy()})")
+            PluginLog.remote(PluginContract.remoteBusy(RotationGate.describeBusy()))
             return
         }
-    }
-
-    private suspend fun finishAction(
-        prefs: Prefs,
-        base: RotationRecord,
-        speedMbps: Double?,
-        note: String
-    ) {
-        prefs.addRecord(base.copy(note = note))
-        if (base.changed && base.newIp != null) {
-            prefs.updateRotationMeta(System.currentTimeMillis(), base.newIp)
-        }
-        if (base.changed) {
-            PluginLog.remote(
-                PluginContract.remoteOk(base.oldIp, base.newIp, speedMbps, note)
-            )
-        } else {
-            PluginLog.remote(
-                PluginContract.remoteFail("E-AND-PLG-0003", note)
-            )
+        try {
+            RemoteRotationWorker.enqueue(context)
+            DebugLogger.feature("PluginActionReceiver", "원격 회전 예약 (워커 위임)")
+        } catch (e: Exception) {
+            // 예약 실패 시 게이트를 즉시 반납해 다음 요청이 막히지 않게 한다.
+            RotationGate.exit()
+            DebugLogger.e("원격 회전 예약 실패", "E-AND-PLG-0003", e)
+            PluginLog.remote(PluginContract.remoteFail("E-AND-PLG-0003", "enqueue failed"))
         }
     }
 }

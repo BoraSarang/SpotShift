@@ -13,6 +13,7 @@ import com.borasarang.spotshift.core.DataController
 import com.borasarang.spotshift.core.HotspotController
 import com.borasarang.spotshift.core.IpVerifier
 import com.borasarang.spotshift.core.RotationEngine
+import com.borasarang.spotshift.core.RotationGate
 import com.borasarang.spotshift.core.ShizukuManager
 import com.borasarang.spotshift.core.SpeedChecker
 import com.borasarang.spotshift.data.Prefs
@@ -283,60 +284,74 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                 DebugLogger.e("Shizuku 미준비 — 수동 실행 불가", "E-AND-PERM-0002")
                 return@launch
             }
-            // config.value 금지: 콜드스타트 직후에는 DataStore 첫 방출 전이라
-            // 초기값(알림=true)이 들어있어 꺼져 있는데도 울린다. 반드시 fresh read.
-            val cfg = prefs.getConfig()
-            // T-45 — 수동 회전은 자동 주기 토글(enabled)을 바꾸지 않는다 (검증 로그)
-            DebugLogger.feature(
-                "HomeViewModel",
-                "manualRotate 시작 (자동 주기 미변경, 현재 자동=${cfg.enabled})"
-            )
-            // 변경 후 검증: 기준 미달이면 재변경, 달성/최대 반복 시 종료 (건너뛰기 없음)
-            val threshold = cfg.speedThresholdMbps
-            val maxAttempts = cfg.speedMaxRechecks.coerceAtLeast(1)
-            var attempt = 0
-            var lastRecord: RotationRecord? = null
-            while (attempt < maxAttempts) {
-                attempt++
-                val base = engine.rotate(cfg)
-                engine.notifySpeedChecking()
-                val speed = speedChecker.measure()
-                val speedNote = if (speed.success && speed.mbps != null) {
-                    prefs.updateLastSpeed(speed.mbps.toFloat())
-                    val label = "%.2f".format(speed.mbps)
-                    prefs.addRecord(
-                        RotationRecord(
-                            changed = false,
-                            method = RotationRecord.METHOD_SPEED_CHECK,
-                            note = "측정 ${label}Mbps"
-                        )
+            // T-52 — 진행 중이면 새 요청 거부 (진행 중인 작업은 그대로 계속)
+            if (!RotationGate.tryEnter(RotationGate.Source.MANUAL)) {
+                DebugLogger.w("[GATE] 이미 IP 변경 진행 중 — 수동 요청 거부 (${RotationGate.describeBusy()})")
+                return@launch
+            }
+            try {
+                runManualRotation(onResult)
+            } finally {
+                RotationGate.exit()
+            }
+        }
+    }
+
+    /** T-52 — 게이트 획득 후 실행되는 수동 회전 본문 (기존 로직 불변). */
+    private suspend fun runManualRotation(onResult: (RotationRecord) -> Unit) {
+        // config.value 금지: 콜드스타트 직후에는 DataStore 첫 방출 전이라
+        // 초기값(알림=true)이 들어있어 꺼져 있는데도 울린다. 반드시 fresh read.
+        val cfg = prefs.getConfig()
+        // T-45 — 수동 회전은 자동 주기 토글(enabled)을 바꾸지 않는다 (검증 로그)
+        DebugLogger.feature(
+            "HomeViewModel",
+            "manualRotate 시작 (자동 주기 미변경, 현재 자동=${cfg.enabled})"
+        )
+        // 변경 후 검증: 기준 미달이면 재변경, 달성/최대 반복 시 종료 (건너뛰기 없음)
+        val threshold = cfg.speedThresholdMbps
+        val maxAttempts = cfg.speedMaxRechecks.coerceAtLeast(1)
+        var attempt = 0
+        var lastRecord: RotationRecord? = null
+        while (attempt < maxAttempts) {
+            attempt++
+            val base = engine.rotate(cfg)
+            engine.notifySpeedChecking()
+            val speed = speedChecker.measure()
+            val speedNote = if (speed.success && speed.mbps != null) {
+                prefs.updateLastSpeed(speed.mbps.toFloat())
+                val label = "%.2f".format(speed.mbps)
+                prefs.addRecord(
+                    RotationRecord(
+                        changed = false,
+                        method = RotationRecord.METHOD_SPEED_CHECK,
+                        note = "측정 ${label}Mbps"
                     )
-                    if (speed.mbps >= threshold) {
-                        lastRecord = finishManual(base, "측정 ${label}Mbps ≥ 기준 ${threshold}Mbps — 달성")
-                        break
-                    }
-                    if (attempt >= maxAttempts) {
-                        lastRecord = finishManual(base, "측정 ${label}Mbps < 기준 ${threshold}Mbps — 기준 미달 (IP 변경은 완료)")
-                        break
-                    }
-                    // 재변경 전 중간 기록 (최종 기록은 루프 종료 시 최신으로 표시)
-                    prefs.addRecord(base.copy(note = "측정 ${label}Mbps < 기준 ${threshold}Mbps — 재변경 ${attempt}/${maxAttempts}"))
-                    if (base.changed && base.newIp != null) {
-                        prefs.updateRotationMeta(System.currentTimeMillis(), base.newIp)
-                    }
-                    continue
-                } else null
-                lastRecord = finishManual(base, speedNote)
-                break
-            }
-            // T-34 — 최종 상태 복원 (SPEED_CHECKING에서 안 돌아오면 진행 표시가 영원히 돈다)
-            lastRecord?.let { final ->
-                engine.notifySpeedFinished(
-                    final.changed,
-                    final.note ?: if (final.changed) "IP 변경 완료" else "IP 변경 실패"
                 )
-                onResult(final)
-            }
+                if (speed.mbps >= threshold) {
+                    lastRecord = finishManual(base, "측정 ${label}Mbps ≥ 기준 ${threshold}Mbps — 달성")
+                    break
+                }
+                if (attempt >= maxAttempts) {
+                    lastRecord = finishManual(base, "측정 ${label}Mbps < 기준 ${threshold}Mbps — 기준 미달 (IP 변경은 완료)")
+                    break
+                }
+                // 재변경 전 중간 기록 (최종 기록은 루프 종료 시 최신으로 표시)
+                prefs.addRecord(base.copy(note = "측정 ${label}Mbps < 기준 ${threshold}Mbps — 재변경 ${attempt}/${maxAttempts}"))
+                if (base.changed && base.newIp != null) {
+                    prefs.updateRotationMeta(System.currentTimeMillis(), base.newIp)
+                }
+                continue
+            } else null
+            lastRecord = finishManual(base, speedNote)
+            break
+        }
+        // T-34 — 최종 상태 복원 (SPEED_CHECKING에서 안 돌아오면 진행 표시가 영원히 돈다)
+        lastRecord?.let { final ->
+            engine.notifySpeedFinished(
+                final.changed,
+                final.note ?: if (final.changed) "IP 변경 완료" else "IP 변경 실패"
+            )
+            onResult(final)
         }
     }
 

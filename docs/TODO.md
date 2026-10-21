@@ -55,3 +55,4 @@
 | T-49 | 기록·속도 화면 재구성 (세그먼트 필터, 전/후 비교 카드) | android | 대기 | 승인 대기 — 스펙 §6 |
 | T-50 | DUN·설정 재구성 (그룹 카드, 배너, 테마 섹션) | android | 대기 | 승인 대기 — 스펙 §6 |
 | T-51 | 대형 화면 대응 (NavigationRail ≥600dp) + 모션/접근성 마감 | android | 대기 | 승인 대기 — 스펙 §7·8 |
+| T-52 | 외부 IP 변경 요청 동시성 제어 (진행 중이면 즉시 거부, 진행 작업 계속) | android | 완료 | `core/RotationGate.kt` — 수동·속도탭·주기·감시·원격이 공유하는 단일 실행 게이트(리스 10분 만료). 원격은 `RemoteRotationWorker`로 실행 위임(수신기는 접수/거부만) — v2까지 `goAsync` 직접 실행이 브로드캐스트 타임아웃 **ANR → 프로세스 킬**로 실측됨(`am_anr ... PLUGIN_ACTION`, 13:51:04). BUSY 응답 `E-AND-PLG-0004`(출처·경과 초), 주기 스킵 `E-AND-SCH-0006`. **A90 실측**: 첫 요청 2초 후 두 번째 → `ok=false errorCode=E-AND-PLG-0004 note=busy (source=remote elapsed=2s)` 즉시 응답, 첫 요청은 계속 진행해 `118.235.2.56→118.235.68.157`·2.68Mbps 달성. 이후 ANR 0·크래시 0·data ON·ERROR 0. 수동/주기 경로는 동일 게이트 공유(코드 검증) — UI 실사격은 T-48 후 확인 |

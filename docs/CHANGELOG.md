@@ -29,6 +29,8 @@
 - 원인 확정: 기기 셸 직접 측정 — `__down` 200(1MB/2.4s)·`__up` 빈 POST 200·256KB POST 200(1.9s, ≈1.1Mbps) 전부 정상, 앱 4병렬×1MB는 파이프 공유로 30초 경계에 걸려 실패. 구 0.3.1 설치분이기도 했음(코드 0.5.0, 기기 0.3.1) → 0.5.0 재설치 후에도 재현되어 근본 수정
 - 검증: `./gradlew assembleDebug` 성공, S22 실검증 — 속도 탭 측정 완료 ↓2.42Mbps ↑1.11Mbps(확정, 4194304B/30264ms) → 기록 저장, ERROR 0
 
+- **수정 (T-52)**: 외부 IP 변경 요청 동시성 — **진행 중이면 새 요청 즉시 거부, 진행 중 작업은 계속**. `core/RotationGate`(단일 실행 게이트, 리스 10분 만료)를 수동·속도탭·주기·감시·원격 5경로가 공유. 원격 수신기는 접수/거부만 하고 실행은 `RemoteRotationWorker`(expedited, unique `KEEP`)로 위임 — v2까지 `goAsync` 직접 실행이 회전 30~100초로 브로드캐스트 타임아웃을 넘겨 **ANR → 프로세스 킬**(`am_anr ... PLUGIN_ACTION`, 2026-10-21 13:51:04)로 실측됐다. 거부 응답 `E-AND-PLG-0004 note=busy (source=… elapsed=…s)`, 주기 스킵은 `E-AND-SCH-0006` 기록. **A90 실측**: 첫 요청 2초 후 두 번째 요청 → BUSY 즉시 응답(`elapsed=2s`)·첫 요청은 정상 완료(`118.235.2.56→118.235.68.157`, 2.68Mbps), 이후 ANR 0·data ON·ERROR 0. 연동 계약 문서 `docs/PLUGIN_CONTRACT.md`에 v2.1로 기록(응답 형식 불변)
+
 ## v0.5.0 — 2026-10-06 — 스케줄러 WorkManager 이관 + 속도 탭 [android] (릴리즈)
 
 - **근본 수정 (T-26)**: 백그라운드 FGS 시작 크래시 6회 (`ForegroundServiceStartNotAllowedException`, dataSync 시간 제한) — `IpRotationService` 삭제, `RotationWorker`+`RotationSchedule`로 이관. 주기=Periodic, 실행=expedited 1회, 실행 중에만 `setForeground` 승격. 등록 지점: 앱 시작·부팅·토글ON·주기변경. 주기 하한 15분 (`coerceAtLeast`)

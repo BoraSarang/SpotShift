@@ -7,7 +7,7 @@
 | 계층 | 선택 | 이유 |
 |---|---|---|
 | 언어 | Kotlin 2.1.21 | Android 표준 |
-| UI | Jetpack Compose (BOM 2025.10.00 — Compose 1.9.3 / Material3 1.4.0) | 모던 대시보드, 다크 테마 용이 |
+| UI | Jetpack Compose (BOM 2025.10.00 — Compose 1.9.3) + Material3 **1.5.0-alpha01** (Expressive) | 모던 대시보드, 다크 테마 용이. stable 1.4.0은 Expressive API internal |
 | 빌드 | AGP 8.9.2 / Gradle 8.11.1 (wrapper) | compileSdk 35 유지 + Expressive API 사용 가능 조합 |
 | 권한 | Shizuku API (rikka.shizuku) | 무루트 시스템 API 접근 |
 | IP 조회 | ipify.org (https://api.ipify.org?format=json) | 무료 공개 API, IPv4 |

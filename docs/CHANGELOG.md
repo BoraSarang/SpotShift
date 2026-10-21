@@ -2,7 +2,9 @@
 
 > 형식: `[android] 버전 — 날짜 — 요약 (에러코드/성능 기록)`
 
-## v0.5.1 — 2026-10-06 — 속도 탭 업로드 실패 수정 [android] (미릴리즈)
+## 누적(미릴리즈) — 2026-10-21 — T-29~T-56: 속도 탭 수정 · 라우터 가드 · UI v2 리디자인 [android]
+
+> 버전 번호 미확정: 설치본 `versionName=0.5.0`/`versionCode=5` 그대로. 누적분(T-37~T-56)이 릴리즈 규모에 도달해 다음 세션에서 `0.8.0`(versionCode 6) 상향 + 릴리즈 APK 를 확정한다 (T-57).
 
 - **추가 (T-47, UI 기반)**: 디자인 토큰 v2 — MD3 시맨틱 role 전체(라이트/다크) + 성공/경고 전용 `SpotColors`(`LocalSpotColors` CompositionLocal), `Shapes`(extraLarge 28dp)·`Typography`(MD3 스케일, 숫자 tabular-nums). 테마 모드 `SYSTEM/LIGHT/DARK` + Android 12+ 동적 색상 토글(끄면 시드 #0E7BC4 정적 팔레트). 설정 "화면" 섹션 신규, `enableEdgeToEdge()` 적용 + 시스템바 아이콘 밝기를 테마에 맞춤. 성공 상태를 `secondary`로 표현하던 9곳을 `SpotColors.success`로, 카드 배경을 `surface`→`surfaceContainerLow`로 치환. Compose BOM 2024.09.03(Material3 1.3.0)은 `MaterialExpressiveTheme`/`MotionScheme` 미제공 → `MaterialTheme`+정적 토큰으로 구현. **A90 실측 통과 (TC-19~23)**: 시스템 다크↔라이트 전환이 재시작 없이 즉시 반영(`dark=false`→`dark=true`, 동일 PID), 설정 고정 테마가 `force-stop` 후 재시작에도 유지, 동적 색상 OFF/ON 시 정적(`#93CCFF`)↔동적(`#76D1FF`) 전환(success/warning은 정적 유지), 글자 크기 1.3x에서 잘림 0(홈 스크롤로 주 액션 버튼 도달, 설정 세그먼트 3버튼 정상), 5탭 전부 순회 ERROR 0·크래시 0, 카운트다운 `1:36:13`↔`14:59 예정` 일치
 
@@ -35,6 +37,10 @@
 - **변경 (T-50)**: DUN·설정 화면 재구성 — DUN은 권한 배너 → 유지 토글 → APN 목록(체크 리드·`DUN 포함` 배지) → pill 액션 → 원복 안내, 설정은 Shizuku 히어로 + 그룹 카드(자동 변경/화면/가드/알림/백그라운드/연동·정보) + 값 배지 슬라이더(눈금 제거·스냅) + 테마 세그먼트. 동작·Prefs 키 불변. **A90 실측**: 다크/라이트 정상, 글자 1.3x 겹침 0(GitHub·About 행 세로 배치로 수정), APN 4건 표시·선택 이동, ERROR 0·크래시 0
 - **변경 (T-51)**: 대형 화면·모션·접근성 마감 — `SpotShiftRoot`가 600dp 기준으로 하단 `NavigationBar`/좌측 `NavigationRail`을 분기(레일 항목 세로 중앙), 탭 전환은 fade+slide `AnimatedContent`. 시스템 "애니메이션 제거"(`animator_duration_scale=0`)면 전환·카운트다운 게이지 애니메이션을 끄고 값만 갱신. Scaffold inset을 `safeDrawing`으로 통일, 내비 아이콘 중복 낭독 제거, 속도 히어로 숫자 semantics 병합, 기록 삭제 터치 40dp. **A90 실측**: 세로 하단 탭 전환·기록 화면 정상, `wm size 1800x2400`(686dp)·가로(914dp)에서 레일 렌더 확인, ERROR 0·크래시 0
 - **변경 (T-53)**: 빌드 스택 상향 — Compose BOM `2024.09.03` → `2025.10.00`(Compose 1.9.3 / Material3 1.4.0), AGP `8.5.2` → `8.9.2`, Gradle `8.9` → `8.11.1`, Kotlin `2.0.21` → `2.1.21`(compileSdk 35 유지). `LocalClipboardManager` → `LocalClipboard`/`ClipEntry`, `ArrowForward` → AutoMirrored로 교체해 컴파일 경고 0. **A90 실측**: 5탭 렌더 정상, IP 복사 정상, 686dp 레일 정상, ERROR 0·크래시 0
+
+- **변경 (T-54)**: Material3 **Expressive 테마·모션** 도입 — `MaterialExpressiveTheme` + `MotionScheme`(expressive/standard). 단 stable 1.4.0에서는 Expressive API가 internal이라 `material3:1.5.0-alpha01`로 고정(compileSdk 35 유지). 탭 전환은 `motionScheme.fastSpatialSpec/fastEffectsSpec` 사용, 색/타이포/셰이프 토큰 불변으로 시각 회귀 0. **A90 실측**: 5탭 렌더 동일, 686dp 레일 동일, ERROR 0·크래시 0
+- **추가 (T-55)**: 대형 화면 내비게이션 **계측 UI 테스트** — `RailNavigationTest`(800dp 레일 3탭, 411dp 하단 탭), `testInstrumentationRunner`/`ui-test-junit4` 도입. **A90에서 `connectedDebugAndroidTest` 2/2 통과** (adb 좌표 주입이 안 되던 레일 탭을 확정 검증)
+- **수정 (T-56)**: 접근성 — 복사/삭제 아이콘 버튼 40dp → 48dp(권장 터치 타깃), `AccessibilitySemanticsTest` 6종 추가(내비 라벨·선택, 주 액션, 복사 버튼 설명, DUN 새로고침, 설정 토글). TalkBack 실행 확인 후 기기에서 비활성화, 8/8 테스트 통과
 
 ## v0.5.0 — 2026-10-06 — 스케줄러 WorkManager 이관 + 속도 탭 [android] (릴리즈)
 

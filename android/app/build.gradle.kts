@@ -21,6 +21,7 @@ android {
         targetSdk = 35
         versionCode = 5
         versionName = "0.5.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     signingConfigs {
@@ -64,6 +65,9 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
+    // T-54 — Expressive(MaterialExpressiveTheme/MotionScheme)는 material3 1.4.0 stable에서 internal
+    // → 1.5.0-alpha01로 명시 고정 (compileSdk 35 유지 가능한 마지막 라인)
+    implementation("androidx.compose.material3:material3:1.5.0-alpha01")
     implementation("androidx.compose.material:material-icons-extended")
 
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
@@ -76,4 +80,11 @@ dependencies {
     implementation("dev.rikka.shizuku:provider:13.1.5")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
+
+    // T-55 — 대형 화면 레일 내비게이션 계측 검증 (에뮬레이터 없이 A90에서 실행)
+    androidTestImplementation(platform("androidx.compose:compose-bom:2025.10.00"))
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 }

@@ -3,7 +3,9 @@ package com.borasarang.spotshift.ui.theme
 import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialExpressiveTheme
+import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
@@ -16,6 +18,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import com.borasarang.spotshift.DebugLogger
+import com.borasarang.spotshift.ui.util.rememberAnimationsEnabled
 
 /**
  * T-47 — 테마 모드. 설정에서 시스템/라이트/다크를 고정할 수 있다.
@@ -35,6 +38,7 @@ enum class ThemeMode(val label: String) {
  * @param themeMode 시스템/라이트/다크 (기본: 시스템)
  * @param dynamicColor Android 12+ 배경화면 동적 색상 사용 여부 (기본: 사용)
  */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun SpotShiftTheme(
     themeMode: ThemeMode = ThemeMode.SYSTEM,
@@ -79,9 +83,18 @@ fun SpotShiftTheme(
         }
     }
 
+    // T-54 — Material3 Expressive 테마. 색/타이포/셰이프는 기존 토큰 유지, 모션만 MotionScheme 주입.
+    // 시스템 "애니메이션 제거"면 standard(짧은 모션)로 내린다.
+    val motionScheme = if (rememberAnimationsEnabled()) {
+        MotionScheme.expressive()
+    } else {
+        MotionScheme.standard()
+    }
+
     CompositionLocalProvider(LocalSpotColors provides spotColors) {
-        MaterialTheme(
+        MaterialExpressiveTheme(
             colorScheme = colorScheme,
+            motionScheme = motionScheme,
             typography = AppTypography,
             shapes = AppShapes,
             content = content

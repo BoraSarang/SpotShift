@@ -2,7 +2,7 @@
 
 > 기준: `material-3` 스킬 (Material Design 3 / Compose-first) · 플랫폼: Android
 > 목업: `docs/design/mockup_v2.html` (5탭 × 라이트/다크 = 10프레임, 실제 앱 데이터)
-> 상태: **T-46 목업 확정 · T-47 토큰/테마 반영 완료 (A90 TC-19~23 통과, 2026-10-21)** — T-48~T-51 승인 대기
+> 상태: **구현 완료 (T-46~T-56, A90 실측 2026-10-21)** — 목업 확정 → 토큰/테마(T-47) → 홈(T-48) → 기록·속도(T-49) → DUN·설정(T-50) → 대형 화면·모션(T-51) → 스택 상향(T-53) → Expressive 테마·모션(T-54) → 레일 계측 테스트(T-55) → 접근성 마감(T-56). 남은 것은 릴리즈 버전 확정(T-57)
 > 원칙: 회전 코어(`RotationEngine`/`DataController`/`AirplaneController`)·Shizuku·Worker 로직은 **불변**, UI 계층만 교체
 
 ## 1. 문제 정의 (현재 UI)
@@ -158,7 +158,7 @@ enum class ThemeMode { SYSTEM, LIGHT, DARK }          // Prefs.themeMode (키별
 > **실측 결과 (T-47, 2026-10-21)**: BOM `2024.09.03` = **Material3 1.3.0** → `MaterialExpressiveTheme`·`MotionScheme`·`LoadingIndicator` **미제공**(컴파일 불가). 따라서 `MaterialTheme(colorScheme, typography, shapes)` + 정적 토큰(`Color.kt`/`Shapes.kt`/`Type.kt`)으로 구현했고, 모션은 Compose 기본 `animateFloatAsState`/`tween`을 유지한다. Expressive 전환은 BOM 상향(1.4+/Material3 1.4) 시 T-47 후속 과제로 재검토 — 상향 시 `material3` API 변경(alpha)과 AGP/Kotlin 정합 확인 필요.
 >
 > **상향 완료 (T-53, 2026-10-21)**: BOM `2025.10.00` = **Compose 1.9.3 / Material3 1.4.0**, AGP 8.9.2 / Gradle 8.11.1 / Kotlin 2.1.21, **compileSdk 35 유지**.
-> 이제 `MaterialExpressiveTheme`·`MotionScheme` 사용 가능. 단, 현 테마는 커스텀 시맨틱 토큰 + `MaterialTheme`이므로 화면 무변경을 위해 **당분간 기존 구성을 유지**하고, Expressive 도입은 별도 디자인 결정(T-54)으로 분리한다.
+> 이제 `MaterialExpressiveTheme`·`MotionScheme` 사용 가능. 단 stable `material3 1.4.0`에서는 Expressive API가 **internal**로 가려져 있어 컴파일 불가 → **T-54에서 `material3:1.5.0-alpha01`로 고정**하고 Expressive 테마/모션을 도입했다(색·타이포·셰이프 토큰은 그대로, 모션만 교체). `1.5.0-beta01+`는 compileSdk 37/AGP 9.1이 필요하므로, stable 1.5.0 공개 시 정식 상향한다.
 
 
 ## 8. 접근성

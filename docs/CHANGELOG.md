@@ -34,6 +34,7 @@
 - **변경 (T-49)**: 기록·속도 화면 재구성 — 기록은 필터 세그먼트(전체/성공/실패/속도 측정 + 건수)와 날짜 그룹 카드, 성공·실패를 색+아이콘+배지로 이중 부호화. 속도는 숫자 히어로(다운로드) + 업로드·지연 2열 + 기준 달성/미달 배지 + 56dp 측정 버튼 + 전/후 비교 카드 + 최근 측정 리스트. **A90 실측**: 다크/라이트 정상, 성공 필터 동작, 실측정 기록 저장(2.03Mbps), ERROR 0·크래시 0
 - **변경 (T-50)**: DUN·설정 화면 재구성 — DUN은 권한 배너 → 유지 토글 → APN 목록(체크 리드·`DUN 포함` 배지) → pill 액션 → 원복 안내, 설정은 Shizuku 히어로 + 그룹 카드(자동 변경/화면/가드/알림/백그라운드/연동·정보) + 값 배지 슬라이더(눈금 제거·스냅) + 테마 세그먼트. 동작·Prefs 키 불변. **A90 실측**: 다크/라이트 정상, 글자 1.3x 겹침 0(GitHub·About 행 세로 배치로 수정), APN 4건 표시·선택 이동, ERROR 0·크래시 0
 - **변경 (T-51)**: 대형 화면·모션·접근성 마감 — `SpotShiftRoot`가 600dp 기준으로 하단 `NavigationBar`/좌측 `NavigationRail`을 분기(레일 항목 세로 중앙), 탭 전환은 fade+slide `AnimatedContent`. 시스템 "애니메이션 제거"(`animator_duration_scale=0`)면 전환·카운트다운 게이지 애니메이션을 끄고 값만 갱신. Scaffold inset을 `safeDrawing`으로 통일, 내비 아이콘 중복 낭독 제거, 속도 히어로 숫자 semantics 병합, 기록 삭제 터치 40dp. **A90 실측**: 세로 하단 탭 전환·기록 화면 정상, `wm size 1800x2400`(686dp)·가로(914dp)에서 레일 렌더 확인, ERROR 0·크래시 0
+- **변경 (T-53)**: 빌드 스택 상향 — Compose BOM `2024.09.03` → `2025.10.00`(Compose 1.9.3 / Material3 1.4.0), AGP `8.5.2` → `8.9.2`, Gradle `8.9` → `8.11.1`, Kotlin `2.0.21` → `2.1.21`(compileSdk 35 유지). `LocalClipboardManager` → `LocalClipboard`/`ClipEntry`, `ArrowForward` → AutoMirrored로 교체해 컴파일 경고 0. **A90 실측**: 5탭 렌더 정상, IP 복사 정상, 686dp 레일 정상, ERROR 0·크래시 0
 
 ## v0.5.0 — 2026-10-06 — 스케줄러 WorkManager 이관 + 속도 탭 [android] (릴리즈)
 

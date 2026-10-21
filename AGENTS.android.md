@@ -6,7 +6,7 @@
 
 - **테스트 기기: 삼성 갤럭시 A90 (SM-A908N, Android 12 / API 31) 단독** — 무선 ADB `192.168.86.30:5555`. 2026-10-11부터 **S22는 검증 대상 제외** (과거 기록만 참고)
 - JDK: `/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home` (brew openjdk@17)
-- Gradle: wrapper 8.9 (반드시 `./gradlew` 사용)
+- Gradle: wrapper 8.11.1 / AGP 8.9.2 / Kotlin 2.1.21 (반드시 `./gradlew` 사용)
 - Android SDK: `~/Library/Android/sdk` (`android/local.properties`에 sdk.dir 기록)
 - (보조) AVD 시스템 이미지: android-37.1 / google_apis_ps16k / arm64-v8a — 필요 시 생성 `spotshift_test`
 - **기기 2대가 동시에 연결될 수 있음** (A90 86.30 / S22 86.49) → 모든 adb 명령에 `-s 192.168.86.30:5555`를 명시한다 (생략 시 `more than one device` 오류)

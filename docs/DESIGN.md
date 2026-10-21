@@ -6,9 +6,9 @@
 
 | 계층 | 선택 | 이유 |
 |---|---|---|
-| 언어 | Kotlin 2.0.21 | Android 표준 |
-| UI | Jetpack Compose (BOM 2024.09.03) + Material 3 | 모던 대시보드, 다크 테마 용이 |
-| 빌드 | AGP 8.5.2 / Gradle 8.9 (wrapper) | SmartSeller 검증 구성 |
+| 언어 | Kotlin 2.1.21 | Android 표준 |
+| UI | Jetpack Compose (BOM 2025.10.00 — Compose 1.9.3 / Material3 1.4.0) | 모던 대시보드, 다크 테마 용이 |
+| 빌드 | AGP 8.9.2 / Gradle 8.11.1 (wrapper) | compileSdk 35 유지 + Expressive API 사용 가능 조합 |
 | 권한 | Shizuku API (rikka.shizuku) | 무루트 시스템 API 접근 |
 | IP 조회 | ipify.org (https://api.ipify.org?format=json) | 무료 공개 API, IPv4 |
 | 네트워크 | OkHttp 4.12.0 | 표준 |

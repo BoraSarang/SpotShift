@@ -52,6 +52,16 @@ class ThermalGuard(private val context: Context) {
         return snap
     }
 
+    /**
+     * T-48 — 홈 히어로 카드의 "온도" 지표용 경량 조회.
+     * [snapshot]과 달리 Prefs·로그를 건드리지 않는다 (5초 폴링에서 호출).
+     */
+    fun batteryTempC(): Float? = runCatching {
+        val status = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        val tenths = status?.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1) ?: -1
+        if (tenths < 0) null else tenths / 10f
+    }.getOrNull()
+
     companion object {
         /** 연기 기준: 배터리 45°C 이상 */
         const val DEFER_BATTERY_TENTHS = 450

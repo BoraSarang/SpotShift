@@ -13,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.borasarang.spotshift.data.RecordLabels
 import com.borasarang.spotshift.data.RotationRecord
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -34,13 +35,8 @@ fun RecentChangeCard(
         record.errorCode != null -> MaterialTheme.colorScheme.error
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
-    val methodLabel = when (record.method) {
-        RotationRecord.METHOD_DATA_RECONNECT -> "데이터 재연결"
-        RotationRecord.METHOD_AIRPLANE -> "에어플레인"
-        RotationRecord.METHOD_HOTSPOT_RESTART -> "핫스팟 재시작"
-        RotationRecord.METHOD_SPEED_CHECK -> "속도 측정"
-        else -> "변경 없음"
-    }
+    val methodLabel = RecordLabels.changeLine(record.source, record.sourceDetail, record.method)
+        ?: "변경 없음"
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,

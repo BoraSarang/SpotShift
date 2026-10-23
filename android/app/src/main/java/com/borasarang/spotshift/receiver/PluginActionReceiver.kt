@@ -31,17 +31,19 @@ class PluginActionReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent?) {
         if (intent?.action != PluginContract.ACTION) return
+        // T-60 — 요청자 식별은 onReceive 안에서 (getSentFromUid는 수신 중에만 유효)
+        val caller = resolveCaller(context, intent)
         val pending = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                handleAction(context.applicationContext, intent.getStringExtra("cmd"))
+                handleAction(context.applicationContext, intent.getStringExtra("cmd"), caller)
             } finally {
                 pending.finish()
             }
         }
     }
 
-    private suspend fun handleAction(context: Context, rawCmd: String?) {
+    private suspend fun handleAction(context: Context, rawCmd: String?, caller: String?) {
         val cmd = PluginContract.sanitizeCmd(rawCmd)
         if (cmd != PluginContract.CMD_AUTOROTATE) {
             PluginLog.remote(PluginContract.remoteInvalid(cmd))
@@ -67,13 +69,49 @@ class PluginActionReceiver : BroadcastReceiver() {
             return
         }
         try {
-            RemoteRotationWorker.enqueue(context)
-            DebugLogger.feature("PluginActionReceiver", "원격 회전 예약 (워커 위임)")
+            RemoteRotationWorker.enqueue(context, caller)
+            DebugLogger.feature(
+                "PluginActionReceiver",
+                "원격 회전 예약 (워커 위임, 요청자=${caller ?: "미상"})"
+            )
         } catch (e: Exception) {
             // 예약 실패 시 게이트를 즉시 반납해 다음 요청이 막히지 않게 한다.
             RotationGate.exit()
             DebugLogger.e("원격 회전 예약 실패", "E-AND-PLG-0003", e)
             PluginLog.remote(PluginContract.remoteFail("E-AND-PLG-0003", "enqueue failed"))
         }
+    }
+
+    /**
+     * T-60 — 외부 요청자 이름 추정.
+     *
+     * 1) 계약 extra `caller` (권장) — RelayConsole 등 호출 앱이 자기 이름을 넘긴다.
+     * 2) API 34+ 발신 UID의 패키지/앱 이름 (adb=shell, 2000).
+     * 3) 알 수 없으면 null — UI에는 "외부 요청"만 표시된다.
+     */
+    private fun resolveCaller(context: Context, intent: Intent): String? {
+        sanitizeCaller(intent.getStringExtra(PluginContract.EXTRA_CALLER))?.let { return it }
+        if (android.os.Build.VERSION.SDK_INT >= 34) {
+            val byUid = runCatching {
+                val pm = context.packageManager
+                val pkg = sentFromPackage?.takeIf { it != context.packageName }
+                val uid = sentFromUid
+                when {
+                    pkg != null -> runCatching {
+                        pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString()
+                    }.getOrDefault(pkg)
+                    uid == 2000 -> "adb(shell)"
+                    else -> pm.getPackagesForUid(uid)
+                        ?.firstOrNull { it != context.packageName }
+                }
+            }.getOrNull()
+            if (!byUid.isNullOrBlank()) return byUid
+        }
+        return null
+    }
+
+    private fun sanitizeCaller(raw: String?): String? {
+        val v = raw?.trim()?.replace(Regex("\\s+"), " ") ?: return null
+        return v.take(48).ifBlank { null }
     }
 }

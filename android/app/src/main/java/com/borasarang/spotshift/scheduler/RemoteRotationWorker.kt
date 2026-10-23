@@ -45,6 +45,8 @@ class RemoteRotationWorker(appContext: Context, params: WorkerParameters) :
         val ctx = applicationContext
         val prefs = Prefs(ctx)
         val cfg = prefs.getConfig()
+        // T-60 — 외부 요청자 (계약 extra `caller` 또는 발신 UID 추정값). 없으면 null.
+        val caller = inputData.getString(KEY_CALLER)?.takeIf { it.isNotBlank() }
 
         // 수신기가 선점한 리스를 승계한다. 프로세스 재시작 등으로 리스가 없으면 재획득.
         if (!RotationGate.isBusy() && !RotationGate.tryEnter(RotationGate.Source.REMOTE)) {
@@ -59,7 +61,7 @@ class RemoteRotationWorker(appContext: Context, params: WorkerParameters) :
                     DebugLogger.w("[REMOTE] 포그라운드 승격 실패 — 계속 진행")
                     DebugLogger.e("원격 회전 포그라운드 승격 실패", "E-AND-PLG-0003", e as? Exception)
                 }
-            runRemoteLoop(prefs, cfg)
+            runRemoteLoop(prefs, cfg, caller)
         } finally {
             RotationGate.exit()
         }
@@ -67,7 +69,7 @@ class RemoteRotationWorker(appContext: Context, params: WorkerParameters) :
     }
 
     /** 계약 v2 §4와 동일한 루프 (변경 → 속도 측정 → 기준 미달 시 재변경). */
-    private suspend fun runRemoteLoop(prefs: Prefs, cfg: RotationConfig) {
+    private suspend fun runRemoteLoop(prefs: Prefs, cfg: RotationConfig, caller: String?) {
         val engine = RotationEngine(
             context = applicationContext,
             dataController = DataController(),
@@ -81,7 +83,7 @@ class RemoteRotationWorker(appContext: Context, params: WorkerParameters) :
         var attempt = 0
         while (attempt < maxAttempts) {
             attempt++
-            val base = engine.rotate(cfg)
+            val base = engine.rotate(cfg, RotationRecord.SOURCE_REMOTE, caller)
             engine.notifySpeedChecking()
             val speed = speedChecker.measure()
             if (speed.success && speed.mbps != null) {
@@ -91,15 +93,17 @@ class RemoteRotationWorker(appContext: Context, params: WorkerParameters) :
                     RotationRecord(
                         changed = false,
                         method = RotationRecord.METHOD_SPEED_CHECK,
-                        note = "측정 ${label}Mbps"
+                        note = "측정 ${label}Mbps",
+                        source = RotationRecord.SOURCE_REMOTE,
+                        sourceDetail = caller
                     )
                 )
                 if (speed.mbps >= threshold) {
-                    finishAction(prefs, base, speed.mbps, "측정 ${label}Mbps ≥ 기준 ${threshold}Mbps — 달성")
+                    finishAction(prefs, base, speed.mbps, "측정 ${label}Mbps ≥ 기준 ${threshold}Mbps — 달성", caller)
                     return
                 }
                 if (attempt >= maxAttempts) {
-                    finishAction(prefs, base, speed.mbps, "측정 ${label}Mbps < 기준 ${threshold}Mbps — 기준 미달 (IP 변경은 완료)")
+                    finishAction(prefs, base, speed.mbps, "측정 ${label}Mbps < 기준 ${threshold}Mbps — 기준 미달 (IP 변경은 완료)", caller)
                     return
                 }
                 prefs.addRecord(base.copy(note = "측정 ${label}Mbps < 기준 ${threshold}Mbps — 재변경 ${attempt}/${maxAttempts}"))
@@ -108,7 +112,7 @@ class RemoteRotationWorker(appContext: Context, params: WorkerParameters) :
                 }
                 continue
             }
-            finishAction(prefs, base, null, base.errorCode ?: base.note ?: "E-AND-NET-0004")
+            finishAction(prefs, base, null, base.errorCode ?: base.note ?: "E-AND-NET-0004", caller)
             return
         }
     }
@@ -117,19 +121,22 @@ class RemoteRotationWorker(appContext: Context, params: WorkerParameters) :
         prefs: Prefs,
         base: RotationRecord,
         speedMbps: Double?,
-        note: String
+        note: String,
+        caller: String?
     ) {
         prefs.addRecord(base.copy(note = note))
         if (base.changed && base.newIp != null) {
             prefs.updateRotationMeta(System.currentTimeMillis(), base.newIp)
         }
+        // T-60 — 요청자를 결과 note에 남긴다 (계약 필드 추가 없이 같은 줄 유지)
+        val logNote = if (!caller.isNullOrBlank()) "$note · 요청자=$caller" else note
         if (base.changed) {
             PluginLog.remote(
-                PluginContract.remoteOk(base.oldIp, base.newIp, speedMbps, note)
+                PluginContract.remoteOk(base.oldIp, base.newIp, speedMbps, logNote)
             )
         } else {
             PluginLog.remote(
-                PluginContract.remoteFail("E-AND-PLG-0003", note)
+                PluginContract.remoteFail("E-AND-PLG-0003", logNote)
             )
         }
     }
@@ -161,12 +168,17 @@ class RemoteRotationWorker(appContext: Context, params: WorkerParameters) :
 
     companion object {
         const val WORK_NAME = "spotshift_remote_once"
+        /** T-60 — 요청자 이름 (선택 입력). */
+        const val KEY_CALLER = "caller"
         private const val CHANNEL_REMOTE = "spotshift_remote"
         private const val NOTIFICATION_ID = 1004
 
         /** 수신기에서 호출 — 실행은 워커에 위임하고 즉시 반환한다. */
-        fun enqueue(context: Context) {
+        fun enqueue(context: Context, caller: String? = null) {
             val request = OneTimeWorkRequestBuilder<RemoteRotationWorker>()
+                .setInputData(
+                    androidx.work.workDataOf(KEY_CALLER to (caller ?: ""))
+                )
                 .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
                 .build()
             WorkManager.getInstance(context)

@@ -12,6 +12,11 @@ object PluginContract {
     const val ACTION_PROBE = "$PACKAGE.PLUGIN_PROBE"
     const val ACTION = "$PACKAGE.PLUGIN_ACTION"
     const val CMD_AUTOROTATE = "autorotate"
+    /**
+     * T-60 — (선택) 호출자 이름. `am broadcast ... --es caller "RelayConsole"` 처럼 넘기면
+     * 기록·홈·`[REMOTE]` 로그 note에 요청자로 표시된다. 없으면 발신 UID로 추정(API 34+).
+     */
+    const val EXTRA_CALLER = "caller"
     const val LOG_TAG = "SpotShift"
     const val PROVIDER_URI = "content://$PACKAGE.plugin/info"
 

@@ -78,7 +78,7 @@ class WatchdogWorker(appContext: Context, params: WorkerParameters) :
             hotspotController = HotspotController(ctx),
             ipVerifier = IpVerifier()
         )
-        val record = engine.rotate(config)
+        val record = engine.rotate(config, RotationRecord.SOURCE_WATCHDOG)
         prefs.addRecord(
             record.copy(note = (record.note?.let { "$it · " } ?: "") + reason)
         )

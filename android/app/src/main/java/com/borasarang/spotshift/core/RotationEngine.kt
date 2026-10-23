@@ -75,15 +75,22 @@ class RotationEngine(
         }
     }
 
-    suspend fun rotate(config: RotationConfig): RotationRecord = mutex.withLock {
+    suspend fun rotate(
+        config: RotationConfig,
+        // T-60 — 변경 출처. 엔진이 만든 모든 기록에 그대로 찍는다 (연기/실패 포함).
+        source: String? = null,
+        sourceDetail: String? = null
+    ): RotationRecord = mutex.withLock {
         onRotationStarted?.invoke()
         eventAlert = config.eventAlertEnabled
         // 진단용: 엔진이 실제로 본 설정값 (알림 몰래켜짐 추적용)
         DebugLogger.i("[CFG] 기준=${config.speedThresholdMbps}Mbps 알림=${config.eventAlertEnabled} 최대반복=${config.speedMaxRechecks}")
+        DebugLogger.i("[ROT] 시작 출처=${source ?: "-"}${sourceDetail?.let { " (요청자=$it)" } ?: ""}")
         // v0.4 — 시작 알림은 상태 알림이 phase로 표시하므로 별도 발행 없음 (단일 알림)
         // T-40 — 온도 가드 연기 (코어 로직 불변, 진입 게이트만 추가)
         // T-41 — 전원 가드 연기 (미충전 + 저잔량)
-        val record = thermalDefer() ?: powerDefer() ?: rotateInternal(config)
+        val record = (thermalDefer() ?: powerDefer() ?: rotateInternal(config))
+            .copy(source = source, sourceDetail = sourceDetail)
         // v0.2 — 요구사항 5: 핫스팟 꺼짐 안내 옵션 확인 (회전 성공/실패 무관)
         // T-31: 조회 실패(null)는 꺼짐으로 오판 금지 — 확정 false일 때만 안내
         if (config.hotspotAutoEnable && hotspotController.isHotspotEnabled() == false) {

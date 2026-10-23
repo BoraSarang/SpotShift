@@ -61,7 +61,8 @@ class RotationWorker(appContext: Context, params: WorkerParameters) :
                     changed = false,
                     method = RotationRecord.METHOD_NONE,
                     note = "스킵: 다른 IP 변경 작업 진행 중",
-                    errorCode = "E-AND-SCH-0006"
+                    errorCode = "E-AND-SCH-0006",
+                    source = RotationRecord.SOURCE_SCHEDULED
                 )
             )
             return Result.success()
@@ -107,7 +108,8 @@ class RotationWorker(appContext: Context, params: WorkerParameters) :
                     changed = false,
                     method = RotationRecord.METHOD_NONE,
                     note = "스킵: ${gate.skippedReason}",
-                    errorCode = "E-AND-SCH-0001"
+                    errorCode = "E-AND-SCH-0001",
+                    source = RotationRecord.SOURCE_SCHEDULED
                 )
             )
             return Result.success()
@@ -142,7 +144,8 @@ class RotationWorker(appContext: Context, params: WorkerParameters) :
                     RotationRecord(
                         changed = false,
                         method = RotationRecord.METHOD_SPEED_CHECK,
-                        note = "측정 실패 — 검증 없이 종료(E-AND-NET-0004)$env"
+                        note = "측정 실패 — 검증 없이 종료(E-AND-NET-0004)$env",
+                        source = RotationRecord.SOURCE_SCHEDULED
                     )
                 )
                 DebugLogger.e("[SCH] 속도 측정 실패 — 검증 없이 종료", "E-AND-NET-0004")
@@ -156,7 +159,8 @@ class RotationWorker(appContext: Context, params: WorkerParameters) :
                     RotationRecord(
                         changed = false,
                         method = RotationRecord.METHOD_SPEED_CHECK,
-                        note = "측정 ${label}Mbps ≥ 기준 ${threshold}Mbps — 달성$env"
+                        note = "측정 ${label}Mbps ≥ 기준 ${threshold}Mbps — 달성$env",
+                        source = RotationRecord.SOURCE_SCHEDULED
                     )
                 )
                 DebugLogger.i("[SCH] 속도 달성(${label}Mbps ≥ ${threshold}Mbps) — 종료")
@@ -167,7 +171,8 @@ class RotationWorker(appContext: Context, params: WorkerParameters) :
                     RotationRecord(
                         changed = false,
                         method = RotationRecord.METHOD_SPEED_CHECK,
-                        note = "측정 ${label}Mbps < 기준 ${threshold}Mbps — 기준 미달 (IP 변경은 완료)$env"
+                        note = "측정 ${label}Mbps < 기준 ${threshold}Mbps — 기준 미달 (IP 변경은 완료)$env",
+                        source = RotationRecord.SOURCE_SCHEDULED
                     )
                 )
                 DebugLogger.i("[SCH] 최대 반복 도달(${attempt}/${maxAttempts}) — 기준 미달로 종료 (IP 변경은 완료)")
@@ -177,7 +182,8 @@ class RotationWorker(appContext: Context, params: WorkerParameters) :
                 RotationRecord(
                     changed = false,
                     method = RotationRecord.METHOD_SPEED_CHECK,
-                    note = "측정 ${label}Mbps < 기준 ${threshold}Mbps — 재변경 ${attempt}/${maxAttempts}$env"
+                    note = "측정 ${label}Mbps < 기준 ${threshold}Mbps — 재변경 ${attempt}/${maxAttempts}$env",
+                    source = RotationRecord.SOURCE_SCHEDULED
                 )
             )
             DebugLogger.i("[SCH] 저속(${label}Mbps < ${threshold}Mbps) — 재변경 ${attempt + 1}/${maxAttempts}")
@@ -189,7 +195,7 @@ class RotationWorker(appContext: Context, params: WorkerParameters) :
         engine: RotationEngine,
         prefs: Prefs
     ): RotationRecord {
-        val record = engine.rotate(config)
+        val record = engine.rotate(config, RotationRecord.SOURCE_SCHEDULED)
         prefs.addRecord(record)
         if (record.changed && record.newIp != null) {
             prefs.updateRotationMeta(System.currentTimeMillis(), record.newIp)

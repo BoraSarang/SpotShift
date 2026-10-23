@@ -46,6 +46,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.borasarang.spotshift.DebugLogger
+import com.borasarang.spotshift.data.RecordLabels
 import com.borasarang.spotshift.data.RotationRecord
 import com.borasarang.spotshift.ui.home.HomeViewModel
 import com.borasarang.spotshift.ui.theme.LocalSpotColors
@@ -337,13 +338,15 @@ private fun recordTitle(record: RotationRecord): String {
             ?.getOrNull(1)
         return if (mbps != null) "속도 측정 · $mbps Mbps" else "속도 측정"
     }
-    return record.note ?: methodLabel(record.method) ?: "변경 없음"
+    return record.note ?: RecordLabels.method(record.method) ?: "변경 없음"
 }
 
 private fun recordSubtitle(record: RotationRecord): String {
     val time = java.text.SimpleDateFormat("HH:mm", Locale.KOREA).format(java.util.Date(record.timestamp))
     val parts = mutableListOf<String>()
-    methodLabel(record.method)?.let { parts += it }
+    // T-60 — 출처(수동/자동/외부 요청)를 가장 앞에 둔다
+    RecordLabels.source(record.source, record.sourceDetail)?.let { parts += it }
+    RecordLabels.method(record.method)?.let { parts += it }
     // 제목이 note를 쓰는 경우(속도/스킵)에는 중복을 피한다
     if (record.oldIp != null || record.newIp != null) {
         record.note?.takeIf { it.isNotBlank() }?.let { parts += it }
@@ -351,14 +354,6 @@ private fun recordSubtitle(record: RotationRecord): String {
     record.errorCode?.let { parts += it }
     parts += time
     return parts.joinToString(" · ")
-}
-
-private fun methodLabel(method: String?): String? = when (method) {
-    RotationRecord.METHOD_DATA_RECONNECT -> "데이터 재연결"
-    RotationRecord.METHOD_AIRPLANE -> "에어플레인"
-    RotationRecord.METHOD_HOTSPOT_RESTART -> "핫스팟 재시작"
-    RotationRecord.METHOD_SPEED_CHECK -> "속도 측정"
-    else -> null
 }
 
 private fun dateLabel(date: LocalDate): String {

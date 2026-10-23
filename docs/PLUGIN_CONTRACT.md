@@ -30,9 +30,26 @@
 - 주기/감시 경로가 게이트에 막히면 실행하지 않고 `E-AND-SCH-0006`으로 기록만 남긴다(원격 응답 없음).
 - `[REMOTE] ok=true/false` 결과 줄은 워커가 회전 종료 시 **한 줄**로 출력한다(형식 불변, 응답 시점만 비동기).
 
+## 요청자 표시 (T-60)
+
+외부 요청이 기록·홈에 **누가** 보냈는지 남긴다. 계약 형식은 그대로이고 아래는 선택 사항이다.
+
+- 권장: 요청 시 `caller` extra를 함께 보낸다.
+
+```
+adb shell am broadcast -a com.borasarang.spotshift.PLUGIN_ACTION \
+  -n com.borasarang.spotshift/.receiver.PluginActionReceiver \
+  --es cmd autorotate --es caller RelayConsole
+```
+
+- `caller`가 없으면 API 34+ 에서는 발신 UID(`getSentFromUid`)의 패키지/앱 이름, adb(shell)는 `adb(shell)`로 추정한다. API 31 이하 + adb 요청은 식별할 수 없어 UI에 `외부 요청`으로만 표시된다.
+- 표시 위치: 기록 항목 `외부 요청 · <caller> · 데이터 재연결 …`, 홈 히어로 `최근 변경 · 외부 요청 · <caller> · …`, `[ROT] 시작 출처=REMOTE` 로그.
+- `[REMOTE]` 결과 줄은 새 필드를 만들지 않고 `note=` 끝에 ` · 요청자=<caller>`를 덧붙인다 (예: `note=측정 9.10Mbps ≥ 기준 2.0Mbps — 달성 · 요청자=RelayConsole`).
+
 ## 변경 이력
 
 * v1 (T-32/33): `autorotate` 1액션 + 로그 보고, MainActivity 전면 경로.
 * v2 (T-35): SDK v2 L2 승격 — Provider·브로드캐스트 액션·`[EVENT]`·직접 로그. 전면 경로 제거.
 * v2.1 (T-52): 동시 요청 정책(BUSY `E-AND-PLG-0004`) + 수신기 즉시 반환(실행은 WorkManager 위임).
   기존 `[REMOTE]` 줄 형식은 그대로이므로 소비자 파싱 변경은 불필요 — `E-AND-PLG-0004` 처리만 추가하면 된다.
+* v2.2 (T-60): 요청자 표시 — 선택 extra `caller`, `[REMOTE]` note에 `요청자=` 추가(필드 구조 불변).

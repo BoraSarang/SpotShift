@@ -18,12 +18,12 @@ package com.borasarang.spotshift.core
 object RotationGate {
 
     /** 요청 출처. 거부 응답에 그대로 노출된다. */
-    enum class Source(val label: String) {
-        MANUAL("manual"),
-        SPEED_TAB("speed"),
-        SCHEDULED("scheduled"),
-        WATCHDOG("watchdog"),
-        REMOTE("remote")
+    enum class Source(val label: String, val ko: String) {
+        MANUAL("manual", "수동 변경"),
+        SPEED_TAB("speed", "속도 탭 변경"),
+        SCHEDULED("scheduled", "자동 변경"),
+        WATCHDOG("watchdog", "속도 감시 자동"),
+        REMOTE("remote", "외부 요청")
     }
 
     private data class Lease(val source: Source, val startedAt: Long)

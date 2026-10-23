@@ -20,6 +20,7 @@ import com.borasarang.spotshift.core.SpeedTester
 import com.borasarang.spotshift.data.Prefs
 import com.borasarang.spotshift.data.RotationConfig
 import com.borasarang.spotshift.data.RotationPhase
+import com.borasarang.spotshift.data.RotationRecord
 import com.borasarang.spotshift.data.SpeedRecord
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.SharingStarted
@@ -166,7 +167,9 @@ class SpeedViewModel(app: Application) : AndroidViewModel(app) {
     /** T-52 — 게이트 획득 후 실행되는 속도 탭 변경 본문 (기존 로직 불변). */
     private suspend fun runChange() {
         val cfg = prefs.getConfig()
-        val record = engine.rotate(cfg)
+        val record = engine.rotate(cfg, RotationRecord.SOURCE_SPEED_TAB)
+        // T-60 — 속도 탭 변경도 기록 탭에 남긴다 (이전에는 최근 IP만 갱신되고 기록이 없었다)
+        prefs.addRecord(record)
         if (record.changed && record.newIp != null) {
             prefs.updateRotationMeta(System.currentTimeMillis(), record.newIp)
         }

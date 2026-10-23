@@ -11,7 +11,11 @@ data class RotationRecord(
     val durationMs: Long = 0L,
     val errorCode: String? = null,
     // v0.4 — 스킵 사유 등 표시용 메모 (기존 기록과 호환: null 허용)
-    val note: String? = null
+    val note: String? = null,
+    // T-60 — 변경을 시작한 주체 (수동/자동/감시/원격). 기존 기록은 null = 출처 미기록
+    val source: String? = null,
+    // T-60 — 원격 요청일 때 요청자 이름 (계약 extra `caller` 또는 발신 UID로 추정)
+    val sourceDetail: String? = null
 ) {
     companion object {
         const val METHOD_NONE = "NONE"
@@ -20,6 +24,13 @@ data class RotationRecord(
         const val METHOD_HOTSPOT_RESTART = "HOTSPOT_RESTART"
         // v0.4 — 속도 측정 단독 기록
         const val METHOD_SPEED_CHECK = "SPEED_CHECK"
+
+        // T-60 — 변경 출처 (RotationGate.Source와 1:1)
+        const val SOURCE_MANUAL = "MANUAL"
+        const val SOURCE_SPEED_TAB = "SPEED_TAB"
+        const val SOURCE_SCHEDULED = "SCHEDULED"
+        const val SOURCE_WATCHDOG = "WATCHDOG"
+        const val SOURCE_REMOTE = "REMOTE"
     }
 }
 

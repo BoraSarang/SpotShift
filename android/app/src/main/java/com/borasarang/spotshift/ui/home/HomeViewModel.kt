@@ -314,7 +314,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         var lastRecord: RotationRecord? = null
         while (attempt < maxAttempts) {
             attempt++
-            val base = engine.rotate(cfg)
+            val base = engine.rotate(cfg, RotationRecord.SOURCE_MANUAL)
             engine.notifySpeedChecking()
             val speed = speedChecker.measure()
             val speedNote = if (speed.success && speed.mbps != null) {
@@ -324,7 +324,8 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                     RotationRecord(
                         changed = false,
                         method = RotationRecord.METHOD_SPEED_CHECK,
-                        note = "측정 ${label}Mbps"
+                        note = "측정 ${label}Mbps",
+                        source = RotationRecord.SOURCE_MANUAL
                     )
                 )
                 if (speed.mbps >= threshold) {

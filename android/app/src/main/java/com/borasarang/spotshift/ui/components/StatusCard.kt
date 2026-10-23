@@ -47,6 +47,9 @@ fun StatusCard(
     lastMeasuredText: String?,
     thresholdText: String,
     temperatureText: String?,
+    // T-60 — IP 변경 방법 표시 (진행 중 출처 / 최근 변경 출처·수단·시각)
+    runningSummary: String? = null,
+    changeSummary: String? = null,
     modifier: Modifier = Modifier,
     onCopyIp: (String) -> Unit = {}
 ) {
@@ -114,6 +117,20 @@ fun StatusCard(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+
+            // T-60 — 진행 중이면 출처를, 아니면 최근 변경의 출처·수단·시각을 보여준다.
+            val activitySummary = runningSummary ?: changeSummary
+            if (activitySummary != null) {
+                Text(
+                    text = activitySummary,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (runningSummary != null) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                )
+            }
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 

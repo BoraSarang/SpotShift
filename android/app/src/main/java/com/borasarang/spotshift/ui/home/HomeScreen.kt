@@ -41,9 +41,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.borasarang.spotshift.DebugLogger
 import com.borasarang.spotshift.core.HotspotController
+import com.borasarang.spotshift.core.IpVerifier
+import com.borasarang.spotshift.core.RotationGate
 import com.borasarang.spotshift.core.SignalInfo
 import com.borasarang.spotshift.core.SignalMonitor
 import com.borasarang.spotshift.core.ThermalGuard
+import com.borasarang.spotshift.data.RecordLabels
 import com.borasarang.spotshift.data.RotationPhase
 import com.borasarang.spotshift.ui.components.ConditionChip
 import com.borasarang.spotshift.ui.components.CountdownGauge
@@ -54,6 +57,9 @@ import com.borasarang.spotshift.ui.components.StatusCard
 import com.borasarang.spotshift.ui.theme.LocalSpotColors
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+
+/** T-60 — 헤더 공인 IP 실조회 주기 (5초 틱 × 12 = 60초). */
+private const val IP_REFRESH_TICKS = 12
 
 /**
  * T-48 — 홈(상태) 화면. 목업 `docs/design/mockup_v2.html?screen=home` 순서를 따른다.
@@ -78,21 +84,30 @@ fun HomeScreen(contentPadding: PaddingValues) {
 
     val hotspotController = remember { HotspotController(context) }
     val thermalGuard = remember { ThermalGuard(context) }
+    val ipVerifier = remember { IpVerifier() }
     var hotspotEnabled by remember { mutableStateOf(false) }
     var publicIp by remember { mutableStateOf<String?>(null) }
     var signal by remember { mutableStateOf<SignalInfo?>(null) }
     var batteryPercent by remember { mutableStateOf<Int?>(null) }
     var temperatureC by remember { mutableStateOf<Float?>(null) }
+    // T-60 — 지금 IP 변경이 진행 중이면 그 출처 (수동/자동/외부 요청 …)
+    var liveSource by remember { mutableStateOf<RotationGate.Source?>(null) }
     // v0.3 — 마지막 변경 시각은 Prefs(config)에서 구독 — 앱 재시작/자동 변경에도 유지
     val lastRotationAt = config.lastRotationAt
 
     LaunchedEffect(Unit) {
+        var tick = 0
         while (true) {
             // T-31: 조회 실패(null)는 이전 표시 유지 — 꺼짐 오판 금지
             hotspotEnabled = hotspotController.isHotspotEnabled() ?: hotspotEnabled
-            if (publicIp == null) {
-                publicIp = com.borasarang.spotshift.core.IpVerifier().fetchPublicIp()
+            // T-60 — 상단 IP 갱신:
+            //  변경 경로(수동/자동/감시/원격)는 Prefs.lastKnownIp를 갱신하고, 아래 LaunchedEffect가
+            //  즉시 헤더에 반영한다. 여기서는 60초마다 실제 조회로 보정한다(통신사가 IP를 바꾼 경우).
+            if (tick % IP_REFRESH_TICKS == 0) {
+                publicIp = ipVerifier.fetchPublicIp() ?: publicIp
             }
+            tick++
+            liveSource = RotationGate.currentSource()
             signal = SignalMonitor(context).snapshot()
             temperatureC = thermalGuard.batteryTempC()
             batteryPercent = runCatching {
@@ -102,6 +117,12 @@ fun HomeScreen(contentPadding: PaddingValues) {
             }.getOrNull()
             delay(5_000)
         }
+    }
+
+    // T-60 — 자동/원격/감시 변경은 이 화면 밖(워커)에서 실행된다. 모든 경로가 남기는
+    // Prefs.lastKnownIp를 구독해 변경 즉시 헤더 IP를 새 값으로 바꾼다 (기존: 최초 1회만 조회).
+    LaunchedEffect(config.lastKnownIp) {
+        config.lastKnownIp?.let { publicIp = it }
     }
 
     // v0.3.1 — 카운트다운: 1초마다 now 갱신 → elapsed/remaining 재계산
@@ -152,6 +173,18 @@ fun HomeScreen(contentPadding: PaddingValues) {
         "${config.intervalMinutes}분마다"
     }
 
+    // T-60 — IP 변경 방법 표시: 진행 중 출처 > 최근 성공 변경(출처·수단·시각)
+    val changeTimeFormat = remember {
+        java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.KOREA)
+    }
+    val lastChangeSummary = records.firstOrNull { it.changed }?.let { rec ->
+        "최근 변경 · " + listOfNotNull(
+            RecordLabels.changeLine(rec.source, rec.sourceDetail, rec.method),
+            changeTimeFormat.format(java.util.Date(rec.timestamp))
+        ).joinToString(" · ")
+    }
+    val runningSummary = liveSource?.let { "지금 ${it.ko} 진행 중" }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -185,12 +218,14 @@ fun HomeScreen(contentPadding: PaddingValues) {
         Spacer(Modifier.height(16.dp))
         StatusCard(
             hotspotEnabled = hotspotEnabled,
-            publicIp = publicIp ?: viewModel.rotationState.currentIp,
+            publicIp = publicIp ?: config.lastKnownIp,
             autoEnabled = config.enabled,
             signalSummary = signalSummary,
             lastMeasuredText = lastSpeed?.let { "%.2f Mbps".format(it) },
             thresholdText = thresholdLabel,
             temperatureText = temperatureC?.let { "%.1f °C".format(it) },
+            runningSummary = runningSummary,
+            changeSummary = lastChangeSummary,
             onCopyIp = { ip ->
                 clipboardScope.launch {
                     clipboard.setClipEntry(

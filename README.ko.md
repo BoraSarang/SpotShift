@@ -13,15 +13,15 @@ Android 기기를 핫스팟으로 사용하며, 설정한 주기마다 모바일
 
 | 항목 | 링크 |
 |------|------|
-| APK (v0.5.0) | [GitHub Releases](https://github.com/BoraSarang/SpotShift/releases/latest) — `app-release.apk` |
+| APK (v0.8.0) | [GitHub Releases](https://github.com/BoraSarang/SpotShift/releases/latest) — `app-release.apk` |
 | 소스 코드 | [BoraSarang/SpotShift](https://github.com/BoraSarang/SpotShift) |
 | 버그 신고 | [GitHub Issues](https://github.com/BoraSarang/SpotShift/issues) |
 | 문의 | leeborasarang@gmail.com |
 
 > **해외(일본 등) 사용**: 이 페이지와 APK는 한국·일본 어디서나 접속·다운로드됩니다. Play 스토어가 필요 없으며, IP 변경은 로컬에서 이뤄지므로 로밍 상태와 무관하게 동작합니다.
 
-![메인 화면](docs/screenshots/android/v0.5.0_home.png)
-![속도 탭](docs/screenshots/android/v0.5.0_speed.png)
+![메인 화면](docs/screenshots/android/v0.8.0_home.png)
+![기록 탭](docs/screenshots/android/v0.8.0_history.png)
 
 ---
 
@@ -101,7 +101,7 @@ cd android
 
 ## 버전 이력
 
-- **v0.5.1 (미릴리즈, 개발분)** — DUN 탭(테더링 제한 해제), 온도 가드·전원 감시·속도 감시, 권한 추상화(PrivilegedShell), 수동 변경이 자동 변경 토글을 켜던 버그 수정
+- **v0.8.0 (2026-10-24)** — UI v2(Material3 Expressive·5탭·대형 화면 레일), DUN 탭(테더링 제한 해제), 온도·전원·속도 감시, 변경 출처 표시(수동/자동/속도 감시/외부 요청 + 요청자), 기록 필터
 - **v0.5.0** — WorkManager 스케줄러 (백그라운드 재시작 크래시 수정), 속도 탭, 기록 초기화 확인
 - **v0.3.1** (2026-08-16) — 첫 릴리즈. 카운트다운 수정 · 서비스 자동 복원 · 배지 제거 · IP 재조회
 - **v0.3.0** — 홈 개선 (예상 변경 시각 · 진행 단계 · 문의 섹션)

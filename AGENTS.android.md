@@ -50,8 +50,8 @@ adb -s $A exec-out screencap -p > /tmp/spotshift.png # 스크린샷
 ## 6. 실기기 검증 기록
 
 - 검증 기기: **A90 (SM-A908N, Android 12 / API 31) 단독** (2026-10-11~). S22 기록은 이력.
-- v0.6~v0.7 (T-37~T-44): DUN 탭·Shizuku 동선·온도/전원 가드·속도 감시·상태 스크립트 — A90 실측 (`docs/CHANGELOG.md`, `docs/plans/PLAN_v0.7_android.md` TC-12~17)
-- v0.5.1 (T-45): 수동 변경의 자동 토글 결합 제거 — **A90 실측 통과 (TC-18, 2026-10-17)**: OFF 상태 유지 + 주기 미등록 + IP 변경/속도 달성 + ERROR 0
+- v0.6~v0.7 개발분 (T-37~T-44, v0.8.0에 포함): DUN 탭·Shizuku 동선·온도/전원 가드·속도 감시·상태 스크립트 — A90 실측 (`docs/CHANGELOG.md`, `docs/plans/PLAN_v0.7_android.md` TC-12~17)
+- T-45 (v0.8.0에 포함): 수동 변경의 자동 토글 결합 제거 — **A90 실측 통과 (TC-18, 2026-10-17)**: OFF 상태 유지 + 주기 미등록 + IP 변경/속도 달성 + ERROR 0
 
 ## 7. 금지사항
 

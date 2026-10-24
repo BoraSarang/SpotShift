@@ -14,13 +14,13 @@ An Android app that uses your phone as a hotspot and automatically rotates the m
 
 | Item | Link |
 |------|------|
-| APK (v0.5.0) | [GitHub Releases](https://github.com/BoraSarang/SpotShift/releases/latest) — `app-release.apk` |
+| APK (v0.8.0) | [GitHub Releases](https://github.com/BoraSarang/SpotShift/releases/latest) — `app-release.apk` |
 | Source | [BoraSarang/SpotShift](https://github.com/BoraSarang/SpotShift) |
 | Issues | [GitHub Issues](https://github.com/BoraSarang/SpotShift/issues) |
 | Contact | leeborasarang@gmail.com |
 
-![Home](docs/screenshots/android/v0.5.0_home.png)
-![Speed](docs/screenshots/android/v0.5.0_speed.png)
+![Home](docs/screenshots/android/v0.8.0_home.png)
+![History](docs/screenshots/android/v0.8.0_history.png)
 
 ---
 
@@ -99,7 +99,7 @@ Release signing keys (`keystore/release.jks`) and passwords stay in `local.prope
 
 ## Version history
 
-- **v0.5.1 (unreleased, in development)** — DUN tab (tethering cap), thermal guard / power monitor / speed watchdog, privileged-shell abstraction, manual change no longer toggles auto rotation
+- **v0.8.0 (2026-10-24)** — UI v2 (Material3 Expressive, 5 tabs, large-screen navigation rail), DUN tab (tethering cap), thermal / power / speed-watchdog guards, change-source labels (manual / auto / watchdog / external + caller), history filters
 - **v0.5.0** — WorkManager scheduler (fixes background restart crashes), Speed tab, history-reset confirm
 - **v0.3.1** — first release. Countdown fix, service auto-restore, badge removal, IP re-query
 - **v0.3.0** — home improvements (expected time, progress stage, contact section)
